@@ -1,26 +1,3 @@
-let allEmployees = [];
-function getEmployees() {
-    if (allEmployees.length > 0) {
-        return allEmployees;
-    }
-
-    // This function should return an array of Employee objects that have worked on the projects between the two dates.
-    // For now, we will return an empty array.
-    let employeesSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Collaborateurs');
-    if (!employeesSheet) {
-        throw new Error("La feuille 'Collaborateurs' n'existe pas dans le classeur.");
-    }
-
-    let data = employeesSheet.getDataRange().getValues();
-    data.shift(); // helper comments
-    let headers = data.shift();
-
-    allEmployees = data.map(row => new Employee(row, headers));
-
-    return allEmployees;
-}
-
-
 class Employee {
     constructor(row, headers) {
 
@@ -29,6 +6,28 @@ class Employee {
         this.endDate = getDateValue(row, headers, 'Sortie');
 
         this.declaredTimes = new Map();
+    }
+
+    static allEmployees = [];
+    static getEmployees() {
+        if (Employee.allEmployees.length > 0) {
+            return Employee.allEmployees;
+        }
+
+        // This function should return an array of Employee objects that have worked on the projects between the two dates.
+        // For now, we will return an empty array.
+        let employeesSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Collaborateurs');
+        if (!employeesSheet) {
+            throw new Error("La feuille 'Collaborateurs' n'existe pas dans le classeur.");
+        }
+
+        let data = employeesSheet.getDataRange().getValues();
+        data.shift(); // helper comments
+        let headers = data.shift();
+
+        Employee.allEmployees = data.map(row => new Employee(row, headers));
+
+        return Employee.allEmployees;
     }
 
     hasWorkedBetween(startDate, endDate) {
@@ -42,7 +41,7 @@ class Employee {
     }
 
     getBudgetedTimesOnProjects(startDate, endDate) {
-        let budgetedTimes = getBudgetedTimes();
+        let budgetedTimes = BudgetedTime.getBudgetedTimes();
 
         return budgetedTimes.filter(budgetedTime => {
             if (budgetedTime.employee == this.name) {
@@ -64,7 +63,7 @@ class Employee {
      * @returns 
      */
     getWorkedTime(month, year) {
-        let workedTime = getWorkedTimes().filter(workedTime => {
+        let workedTime = WorkedTime.getWorkedTimes().filter(workedTime => {
             return workedTime.employee === this.name && workedTime.month.getMonth() === (month - 1) && workedTime.month.getFullYear() === year;
         }).at(0);
 
@@ -76,7 +75,7 @@ class Employee {
     }
 
     getDeclaredTimeForYearAndProject(year, project) {
-        return getDeclaredTimes().filter(declaredTime => {
+        return DeclaredTime.getDeclaredTimes().filter(declaredTime => {
                 return declaredTime.employee === this.name && declaredTime.month.getFullYear() === year && declaredTime.project === project;
             }).reduce((total, declaredTime) => total + declaredTime.declaredTime, 0);
     }
@@ -88,7 +87,7 @@ class Employee {
      * @returns 
      */
     getDeclaredTimeForMonth(month, year) {
-        return getDeclaredTimes().filter(declaredTime => {
+        return DeclaredTime.getDeclaredTimes().filter(declaredTime => {
                 return declaredTime.employee === this.name && 
                        declaredTime.month.getMonth() === (month - 1) &&
                        declaredTime.month.getFullYear() === year;

@@ -1,24 +1,3 @@
-let allBudgetedTimes = [];
-function getBudgetedTimes() {
-    if (allBudgetedTimes.length > 0) {
-        return allBudgetedTimes;
-    }
-
-    let budgetedTimesSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Budget par projet et par personne');
-
-    if (!budgetedTimesSheet) {
-        throw new Error("La feuille 'Budget par projet et par personne' n'existe pas dans le classeur.");
-    }
-
-    let data = budgetedTimesSheet.getDataRange().getValues();
-    data.shift(); // helper comments
-    let headers = data.shift();
-
-    allBudgetedTimes = data.map(row => new BudgetedTime(row, headers));
-
-    return allBudgetedTimes;
-}
-
 class BudgetedTime {
     constructor(row, headers) {
 
@@ -38,12 +17,33 @@ class BudgetedTime {
         });
     }
 
+    static allBudgetedTimes = [];
+    static getBudgetedTimes() {
+        if (BudgetedTime.allBudgetedTimes.length > 0) {
+            return BudgetedTime.allBudgetedTimes;
+        }
+
+        let budgetedTimesSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Budget par projet et par personne');
+
+        if (!budgetedTimesSheet) {
+            throw new Error("La feuille 'Budget par projet et par personne' n'existe pas dans le classeur.");
+        }
+
+        let data = budgetedTimesSheet.getDataRange().getValues();
+        data.shift(); // helper comments
+        let headers = data.shift();
+
+        BudgetedTime.allBudgetedTimes = data.map(row => new BudgetedTime(row, headers));
+
+        return BudgetedTime.allBudgetedTimes;
+    }
+
     getBudgetedTimeForYear(year) {
         return this.budgetedTimes.get(year.toString()) || 0; // Return 0 if no budgeted time for the year
     }
 
     getWorkPackages() {
-        return getWorkPackages().filter(workPackage => {
+        return WorkPackage.getWorkPackages().filter(workPackage => {
             return workPackage.project == this.project;
         });
     }

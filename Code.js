@@ -2,6 +2,7 @@ function onOpen() {
   let ui = SpreadsheetApp.getUi();
   ui.createMenu('Génération des temps')
       .addItem('Générer les temps déclarés', 'CreateDeclaredTimes')
+      .addItem('Mettre à jour les salaires collaborateurs', 'UpdateEmployeeSalaries')
       .addToUi();
 }
 
@@ -28,7 +29,7 @@ function generatedTimesForDates(startDate, endDate, deleteExistingTimes) {
         let declaredTimesSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Temps déclarés');
         if (declaredTimesSheet) {
             
-            let existingDeclaredTimes = getDeclaredTimes();
+            let existingDeclaredTimes = DeclaredTime.getDeclaredTimes();
 
             for (let i = existingDeclaredTimes.length - 1; i >= 1; i--) {
                 if (isDateInRange(existingDeclaredTimes[i].month, startDate, endDate)) {
@@ -47,7 +48,7 @@ function generatedTimesForDates(startDate, endDate, deleteExistingTimes) {
 
 
     // Start by getting the budgeted times for each work package and each person, per year.
-    let employees = getEmployees().filter(employee => {
+    let employees = Employee.getEmployees().filter(employee => {
         return employee.hasWorkedBetween(startDate, endDate); // && employee.name == "Laurence Fontaine";
     });
 
@@ -56,7 +57,7 @@ function generatedTimesForDates(startDate, endDate, deleteExistingTimes) {
 
 
     employees.forEach(employee => {
-        let budgetedTimes = employee.getBudgetedTimesOnProjects(startDate, endDate); // returns an array of projects that the employee has budgeted times on, between the two dates
+        let budgetedTimes = employee.BudgetedTime.getBudgetedTimesOnProjects(startDate, endDate); // returns an array of projects that the employee has budgeted times on, between the two dates
 
         budgetedTimes.forEach(budgetedTime => {
             for (let year = startDate.getFullYear(); year <= endDate.getFullYear(); year++) {
@@ -67,7 +68,7 @@ function generatedTimesForDates(startDate, endDate, deleteExistingTimes) {
 
                     let missingTime = budgetedTime.getBudgetedTimeForYear(year) - declaredTimeOnProject;
 
-                    let workPackages = budgetedTime.getWorkPackages();
+                    let workPackages = budgetedTime.WorkPackage.getWorkPackages();
 
                     console.log("Pour l'employé " + employee.name + " et le projet " + budgetedTime.project + ", il reste " + missingTime + " PM à déclarer pour l'année " + year);
 
@@ -166,13 +167,13 @@ function getDateValue(row, headers, field) {
 function flushSpreadsheetAndCache(ClearDeclaredTimesOnly = false) {
     SpreadsheetApp.flush();
 
-    allDeclaredTimes = [];
+    DeclaredTime.allDeclaredTimes = [];
 
     if (!ClearDeclaredTimesOnly){
-        allWorkPackages = [];
-        allBudgetedTimes = [];
-        allEmployees = [];
-        allWorkedTimes = [];
+        WorkPackage.allWorkPackages = [];
+        BudgetedTime.allBudgetedTimes = [];
+        Employee.allEmployees = [];
+        WorkedTime.allWorkedTimes = [];
     }
 }
 
@@ -186,4 +187,14 @@ function isDateInRange(date, startDate, endDate) {
     endDate.setHours(0, 0, 0, 0);
 
     return date >= startDate && date <= endDate;
+}
+
+/**
+ * Pour tous les salaires passés, présents dans l'onglet "Import Salaires", on met à jour le salaire (colonne C). 
+ * On ne modifie pas le temps de travail dans le mois qui a pu être corrigé dans le cadre des apprentis.
+ * 
+ * 
+ */
+function UpdateEmployeeSalaries() {
+    
 }
