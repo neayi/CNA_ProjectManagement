@@ -8,9 +8,8 @@ class Employee {
         this.declaredTimes = new Map();
     }
 
-    static allEmployees = [];
     static getEmployees() {
-        if (Employee.allEmployees.length > 0) {
+        if (Employee.allEmployees != undefined && Employee.allEmployees.length > 0) {
             return Employee.allEmployees;
         }
 

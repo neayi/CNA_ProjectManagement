@@ -17,9 +17,8 @@ class BudgetedTime {
         });
     }
 
-    static allBudgetedTimes = [];
     static getBudgetedTimes() {
-        if (BudgetedTime.allBudgetedTimes.length > 0) {
+        if (BudgetedTime.allBudgetedTimes != undefined && BudgetedTime.allBudgetedTimes.length > 0) {
             return BudgetedTime.allBudgetedTimes;
         }
 

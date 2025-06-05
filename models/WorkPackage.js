@@ -16,9 +16,8 @@ class WorkPackage {
     });
   }
     
-  static allWorkPackages = [];
   static getWorkPackages() {
-    if (WorkPackage.allWorkPackages.length > 0) {
+    if (WorkPackage.allWorkPackages != undefined && WorkPackage.allWorkPackages.length > 0) {
       return WorkPackage.allWorkPackages;
     }
 

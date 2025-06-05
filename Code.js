@@ -189,12 +189,27 @@ function isDateInRange(date, startDate, endDate) {
     return date >= startDate && date <= endDate;
 }
 
+
 /**
- * Pour tous les salaires passés, présents dans l'onglet "Import Salaires", on met à jour le salaire (colonne C). 
- * On ne modifie pas le temps de travail dans le mois qui a pu être corrigé dans le cadre des apprentis.
- * 
- * 
+ * Fill the "Temps déclarés" sheet with rows that match the work packages and the people who worked on them.
  */
 function UpdateEmployeeSalaries() {
-    
+  const html = HtmlService.createHtmlOutputFromFile('interfaces/WarningBeforeUpdateSalaries.html')
+    .setWidth(500)
+    .setHeight(550);
+
+  SpreadsheetApp.getUi().showModalDialog(html, 'Générer les salaires des collaborateurs');
+}
+
+function ConfirmUpdateEmployeeSalaries() {
+    WorkedTime.UpdateEmployeeSalaries();
+}
+
+
+function getDateKey(date) {
+  return date.getMonth() + '-' + date.getFullYear();
+}
+
+function getMonthStringForDate(date) {
+  return Utilities.formatDate(date, Session.getScriptTimeZone(), '01/MM/yyyy');
 }

@@ -9,9 +9,8 @@ class DeclaredTime {
   }
 
     
-  static allDeclaredTimes = [];
   static getDeclaredTimes() {
-    if (DeclaredTime.allDeclaredTimes.length > 0) {
+    if (DeclaredTime.allDeclaredTimes != undefined && DeclaredTime.allDeclaredTimes.length > 0) {
       return DeclaredTime.allDeclaredTimes;
     }
 
