@@ -28,7 +28,7 @@ function generatedTimesForDates(startDate, endDate, deleteExistingTimes) {
     if (deleteExistingTimes) {
         let declaredTimesSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Temps déclarés');
         if (declaredTimesSheet) {
-            
+
             let existingDeclaredTimes = DeclaredTime.getDeclaredTimes();
 
             for (let i = existingDeclaredTimes.length - 1; i >= 1; i--) {
@@ -55,27 +55,26 @@ function generatedTimesForDates(startDate, endDate, deleteExistingTimes) {
     Logger.log("Found " + employees.length + " employees who have worked between " + startDate + " and " + endDate);
     Logger.log(employees);
 
-
     employees.forEach(employee => {
-        let budgetedTimes = employee.BudgetedTime.getBudgetedTimesOnProjects(startDate, endDate); // returns an array of projects that the employee has budgeted times on, between the two dates
+        let budgetedTimes = employee.getBudgetedTimesOnProjects(startDate, endDate); // returns an array of projects that the employee has budgeted times on, between the two dates
 
         budgetedTimes.forEach(budgetedTime => {
             for (let year = startDate.getFullYear(); year <= endDate.getFullYear(); year++) {
-                let declaredTimeOnProject = employee.getDeclaredTimeForYearAndProject(year, budgetedTime.project); // returns the declared time for the employee for the given year 
+                let declaredTimeOnProject = employee.getDeclaredTimeForYearAndProject(year, budgetedTime.project); // returns the declared time for the employee for the given year
 
                 if (declaredTimeOnProject < budgetedTime.getBudgetedTimeForYear(year)) {
                     // If the declared time is less than the budgeted time, we need to generate the missing times.
 
                     let missingTime = budgetedTime.getBudgetedTimeForYear(year) - declaredTimeOnProject;
 
-                    let workPackages = budgetedTime.WorkPackage.getWorkPackages();
+                    let workPackages = budgetedTime.getWorkPackages();
 
                     console.log("Pour l'employé " + employee.name + " et le projet " + budgetedTime.project + ", il reste " + missingTime + " PM à déclarer pour l'année " + year);
 
                     workPackages.forEach(workPackage => {
-                        if (workPackage.getBudgetedTimeForYear(year) > 0 && 
+                        if (workPackage.getBudgetedTimeForYear(year) > 0 &&
                             workPackage.getDeclaredTimeForYear(year) < workPackage.getBudgetedTimeForYear(year)) {
-                            
+
                             if (missingTime <= 0) {
                                 return; // No more time to declare for this project
                             }
@@ -96,13 +95,13 @@ function generatedTimesForDates(startDate, endDate, deleteExistingTimes) {
                                     rows.push([
                                         workPackage.name,
                                         employee.name,
-                                        "01/" + m + "/" + year, 
+                                        "01/" + m + "/" + year,
                                         0, // This is in hours - ignored for the moment
                                         newDeclaredTime,
                                         '', // Planifié dans l'année - calculated
                                         '', // 	Total déclaré dans l'année - calculated
                                         '', // 	Reste à déclarer dans l'année - calculated
-                                        '', // 	Dispo pour ce collaborateur dans le mois - calculated	
+                                        '', // 	Dispo pour ce collaborateur dans le mois - calculated
                                         budgetedTime.project // Projet
                                     ]);
 

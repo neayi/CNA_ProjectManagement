@@ -4,7 +4,6 @@ class WorkedTime {
         this.month = getDateValue(row, headers, 'Mois');
         this.salary = getValue(row, headers, 'Salaire chargé réel mensuel');
 
-        this.workedDays = getValue(row, headers, 'Nombre de jours travaillés');
         this.salaryPerPM = getValue(row, headers, 'Salaire chargé 1 PM (ETP)');
         this.year = getValue(row, headers, 'Année');
         this.status = getValue(row, headers, 'Statut');
@@ -32,9 +31,9 @@ class WorkedTime {
     }
 
     /**
-     * Pour tous les salaires passés, présents dans l'onglet "Import Salaires", on met à jour le salaire (colonne C). 
+     * Pour tous les salaires passés, présents dans l'onglet "Import Salaires", on met à jour le salaire (colonne C).
      * On ne modifie pas le temps de travail dans le mois qui a pu être corrigé dans le cadre des apprentis.
-     * 
+     *
      * Pour les salaires futurs, on créé les salaires en se basant sur les données de "Salaires à venir"
      */
     static UpdateEmployeeSalaries() {
@@ -44,7 +43,7 @@ class WorkedTime {
             throw new Error("La feuille 'Import Salaires' n'existe pas dans le classeur.");
         }
 
-        let importSalariesData = importSalariesSheet.getDataRange().getValues();       
+        let importSalariesData = importSalariesSheet.getDataRange().getValues();
         let importSalariesHeaders = importSalariesData.shift();
 
         // Create a map with the employee name and the month as key, and the salary as value
@@ -65,7 +64,7 @@ class WorkedTime {
         if (!salariesSheet) {
             throw new Error("La feuille 'Salaires collaborateurs' n'existe pas dans le classeur.");
         }
-            
+
         // Remove any existing filter on the salaries sheet
         const filter = salariesSheet.getFilter();
         if (filter) {
@@ -159,12 +158,12 @@ class WorkedTime {
 
 
     /**
-     * Remplir pour tous les collaborateurs dans le premier tableau et pour tous les mois entre date début et un mois avant la date 
-     * changement (ou date de fin si date de changement est vide) les lignes du tableau à modifier avec le salaire chargé et le 
-     * temps de travail spécifié dans le temps de travail par mois. 
-     * 
+     * Remplir pour tous les collaborateurs dans le premier tableau et pour tous les mois entre date début et un mois avant la date
+     * changement (ou date de fin si date de changement est vide) les lignes du tableau à modifier avec le salaire chargé et le
+     * temps de travail spécifié dans le temps de travail par mois.
+     *
      * Attention à chaque date anniversaire spécifique au collaborateur, il faut pour chaque collaborateur procéder à l'augmentation
-     * fixe précisée dans le premier tableau. 
+     * fixe précisée dans le premier tableau.
      */
     static processFutureSalaries(startDate) {
         let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Salaires à venir");
@@ -321,7 +320,7 @@ class WorkedTime {
         newRow.push(`=I${rowIndex}/vlookup(B${rowIndex}; 'Import Salaires'!M:N; 2; false)`);
         newRow.push(`=sumifs('Import Salaires'!F:F; 'Import Salaires'!C:C; A${rowIndex}; 'Import Salaires'!A:A; B${rowIndex})`);
         newRow.push(`=sumifs('Import Salaires'!H:H; 'Import Salaires'!C:C; A${rowIndex}; 'Import Salaires'!A:A; B${rowIndex})`);
-            
+
         return newRow;
     }
 }

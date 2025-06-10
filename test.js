@@ -4,7 +4,7 @@ function GenerationTest() {
     // Test the different models
     let startDate = new Date('2025-01-01');
     let endDate = new Date('2025-12-01');
-    
+
     generatedTimesForDates(startDate, endDate, true);
 }
 
@@ -28,7 +28,7 @@ function UnitTest() {
         return employee.name == "Martin Rollet";
     }).at(0);
 
-    let budgetedProjects = martin.BudgetedTime.getBudgetedTimesOnProjects(startDate, endDate);
+    let budgetedProjects = martin.getBudgetedTimesOnProjects(startDate, endDate);
 
     let declaredTimesForMartinIn2024 = martin.getDeclaredTimeForYear(2024); // 2.2
     let declaredTimesForMartinInJanuary2024 = martin.getDeclaredTimeForMonth(0, 2024); // 0.2
@@ -44,16 +44,16 @@ function UnitTest() {
         throw new Error("Martin should have declared 0.2 in January 2024, but got " + declaredTimesForMartinInJanuary2024);
     }
 
-    let wp = budgetedTimes.filter(wp => wp.project == 'CONSERWA').at(0).WorkPackage.getWorkPackages();
+    let wp = budgetedTimes.filter(wp => wp.project == 'CONSERWA').at(0).getWorkPackages();
     let wp1 = wp.at(0);
-    
+
     let wp1budgetFor2023 = wp1.getBudgetedTimeForYear(2023); // 0.2
     let wp1declaredFor2023 = wp1.getDeclaredTimeForYear(2023); // 0.2
 
     if (wp1budgetFor2023 != 0.2) {
         throw new Error("wp1 budget for 2023 should be 0.2, but got " + wp1budgetFor2023);
     }
-    
+
     if (wp1declaredFor2023 != 0.2) {
         throw new Error("wp1 declared for 2023 should be 0.2, but got " + wp1declaredFor2023);
     }
