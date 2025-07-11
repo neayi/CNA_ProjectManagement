@@ -1,9 +1,9 @@
 function onOpen() {
-  let ui = SpreadsheetApp.getUi();
-  ui.createMenu('Génération des temps')
-      .addItem('Générer les temps déclarés', 'CreateDeclaredTimes')
-      .addItem('Mettre à jour les salaires collaborateurs', 'UpdateEmployeeSalaries')
-      .addToUi();
+    let ui = SpreadsheetApp.getUi();
+    ui.createMenu('Génération des temps')
+        .addItem('Générer les temps déclarés', 'CreateDeclaredTimes')
+        .addItem('Mettre à jour les salaires collaborateurs', 'UpdateEmployeeSalaries')
+        .addToUi();
 }
 
 
@@ -11,11 +11,11 @@ function onOpen() {
  * Fill the "Temps déclarés" sheet with rows that match the work packages and the people who worked on them.
  */
 function CreateDeclaredTimes() {
-  const html = HtmlService.createHtmlOutputFromFile('interfaces/SelectDates.html')
-    .setWidth(500)
-    .setHeight(550);
+    const html = HtmlService.createHtmlOutputFromFile('interfaces/SelectDates.html')
+        .setWidth(500)
+        .setHeight(550);
 
-  SpreadsheetApp.getUi().showModalDialog(html, 'Choisir les dates de début et de fin');
+    SpreadsheetApp.getUi().showModalDialog(html, 'Choisir les dates de début et de fin');
 }
 
 function generatedTimesForDates(startDate, endDate, deleteExistingTimes) {
@@ -33,7 +33,7 @@ function generatedTimesForDates(startDate, endDate, deleteExistingTimes) {
 
             for (let i = existingDeclaredTimes.length - 1; i >= 1; i--) {
                 if (isDateInRange(existingDeclaredTimes[i].month, startDate, endDate)) {
-                   declaredTimesSheet.deleteRow(i + 2); // +2 because the first row is the header and the index is 0-based
+                    declaredTimesSheet.deleteRow(i + 2); // +2 because the first row is the header and the index is 0-based
                 }
             }
 
@@ -148,19 +148,19 @@ function getEndMonth(year, endDate) {
 }
 
 function getValue(row, headers, field) {
-  let index = headers.indexOf(field);
-  if (index === -1) {
-    throw new Error(`Le champ '${field}' n'existe pas dans les en-têtes.`);
-  }
-  return row[index];
+    let index = headers.indexOf(field);
+    if (index === -1) {
+        throw new Error(`Le champ '${field}' n'existe pas dans les en-têtes.`);
+    }
+    return row[index];
 }
 
 function getDateValue(row, headers, field) {
-  let index = headers.indexOf(field);
-  if (index === -1) {
-    throw new Error(`Le champ '${field}' n'existe pas dans les en-têtes.`);
-  }
-  return row[index] == '' ? null : new Date(row[index]);
+    let index = headers.indexOf(field);
+    if (index === -1) {
+        throw new Error(`Le champ '${field}' n'existe pas dans les en-têtes.`);
+    }
+    return row[index] == '' ? null : new Date(row[index]);
 }
 
 function flushSpreadsheetAndCache(ClearDeclaredTimesOnly = false) {
@@ -168,7 +168,7 @@ function flushSpreadsheetAndCache(ClearDeclaredTimesOnly = false) {
 
     DeclaredTime.allDeclaredTimes = [];
 
-    if (!ClearDeclaredTimesOnly){
+    if (!ClearDeclaredTimesOnly) {
         WorkPackage.allWorkPackages = [];
         BudgetedTime.allBudgetedTimes = [];
         Employee.allEmployees = [];
@@ -193,11 +193,11 @@ function isDateInRange(date, startDate, endDate) {
  * Fill the "Temps déclarés" sheet with rows that match the work packages and the people who worked on them.
  */
 function UpdateEmployeeSalaries() {
-  const html = HtmlService.createHtmlOutputFromFile('interfaces/WarningBeforeUpdateSalaries.html')
-    .setWidth(500)
-    .setHeight(550);
+    const html = HtmlService.createHtmlOutputFromFile('interfaces/WarningBeforeUpdateSalaries.html')
+        .setWidth(500)
+        .setHeight(550);
 
-  SpreadsheetApp.getUi().showModalDialog(html, 'Générer les salaires des collaborateurs');
+    SpreadsheetApp.getUi().showModalDialog(html, 'Générer les salaires des collaborateurs');
 }
 
 function ConfirmUpdateEmployeeSalaries() {
@@ -206,9 +206,23 @@ function ConfirmUpdateEmployeeSalaries() {
 
 
 function getDateKey(date) {
-  return date.getMonth() + '-' + date.getFullYear();
+    return date.getMonth() + '-' + date.getFullYear();
 }
 
 function getMonthStringForDate(date) {
-  return Utilities.formatDate(date, Session.getScriptTimeZone(), '01/MM/yyyy');
+    return Utilities.formatDate(date, Session.getScriptTimeZone(), '01/MM/yyyy');
+}
+
+/**
+ * Returns a list of projects for the picker.
+ * Each project should have an id and a name.
+ */
+function getProjects() {
+    // We extract the list of projects from the "Projects" sheet, using the Projects model
+    let existingProjects = Project.getProjects();
+
+    return existingProjects.map(project => ({
+        id: project.project,
+        name: project.project
+    }));
 }

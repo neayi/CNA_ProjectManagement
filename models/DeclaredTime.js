@@ -1,3 +1,7 @@
+/**
+ * Model for the "Temps déclarés" sheet.
+ */
+
 class DeclaredTime {
   constructor(row, headers) {
 

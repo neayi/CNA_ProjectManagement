@@ -47,7 +47,6 @@
             background: #dee2e6;
         }
 
-        /* ...existing code... */
         .ui-datepicker .ui-datepicker-prev span,
         .ui-datepicker .ui-datepicker-next span {
             display: block;
@@ -114,18 +113,27 @@
             </p>
         </section>
 
-
         <form id="myForm" aria-label="Dates selection form">
             <div class="row">
                 <div class="col mb-3">
+                    <label for="projectPicker" class="form-label">Projet :</label>
+                    <select id="projectPicker" name="projectId" class="form-select" disabled>
+                        <option value="">Chargement des projets...</option>
+                    </select>
+                    <span id="project-spinner" class="spinner-border spinner-border-sm text-primary ms-2" role="status"
+                        aria-hidden="true"></span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col mb-3">
                     <label for="startDate" class="form-label">Date de début :</label>
-                    <input type="text" id="datepickerStart" name="dateStart" class="form-control date-pickers" autocomplete="off" readonly="readonly" style="width: 128px; text-align: right;">
-                    <!-- <input type="text" id="apiKey" name="apiKey" placeholder="API Key from AI Studio" class="form-control" aria-describedby="keyHelp"> -->
+                    <input type="text" id="datepickerStart" name="dateStart" class="form-control date-pickers"
+                        autocomplete="off" readonly="readonly" style="width: 128px; text-align: right;">
                 </div>
                 <div class="col mb-3">
                     <label for="endDate" class="form-label">Date de fin :</label>
-                    <input type="text" id="datepickerEnd" name="dateEnd" class="form-control date-pickers" autocomplete="off" readonly="readonly" style="width: 128px; text-align: right;">
-                    <!-- <input type="text" id="apiKey" name="apiKey" placeholder="API Key from AI Studio" class="form-control" aria-describedby="keyHelp"> -->
+                    <input type="text" id="datepickerEnd" name="dateEnd" class="form-control date-pickers"
+                        autocomplete="off" readonly="readonly" style="width: 128px; text-align: right;">
                 </div>
             </div>
 
@@ -133,14 +141,14 @@
                 <div class="col mb-3">
                     <input type="checkbox" id="deleteExistingTimes" name="deleteExistingTimes" class="form-check-input" >
                     <label for="deleteExistingTimes" class="form-label">Supprimer les temps existants dans cette plage</label>
-                    
+
                 </div>
             </div>
 
             <div class="row">
                 <div class="col mb-3">
                     <span class="form-text" id="error-text"></span>
-                    
+
                 </div>
             </div>
 
@@ -153,63 +161,80 @@
         </form>
     </div>
 
-<script>
-    function startGeneration() {
+    <script>
+        function startGeneration() {
+            let startDate = $("#datepickerStart").val();
+            let endDate = $("#datepickerEnd").val();
+            let deleteExistingTimes = $("#deleteExistingTimes").is(":checked");
+            let projectId = $("#projectPicker").val();
 
-        // Get the values from the form inputs
-        let startDate = $("#datepickerStart").val();
-        let endDate = $("#datepickerEnd").val();
-        let deleteExistingTimes = $("#deleteExistingTimes").is(":checked");
+            if (!projectId) {
+                $("#error-text").text("Veuillez sélectionner un projet.");
+                return;
+            }
 
-        // Validate the dates
-        if (!startDate || !endDate) {
-            $("#error-text").text("Veuillez sélectionner les dates de début et de fin.");
-            return;
+            if (!startDate || !endDate) {
+                $("#error-text").text("Veuillez sélectionner les dates de début et de fin.");
+                return;
+            }
+
+            const [startMonth, startYear] = startDate.split('/');
+            const [endMonth, endYear] = endDate.split('/');
+            startDate = new Date(Number(startYear), Number(startMonth) - 1, 1);
+            endDate = new Date(Number(endYear), Number(endMonth) - 1, 1);
+
+            if (startDate > endDate) {
+                $("#error-text").text("La date de début ne peut pas être postérieure à la date de fin.");
+                return;
+            }
+
+            google.script.run.generatedTimesForDates(startDate.valueOf(), endDate.valueOf(), deleteExistingTimes, projectId);
+            google.script.host.close();
         }
 
-        const [startMonth, startYear] = startDate.split('/');
-        const [endMonth, endYear] = endDate.split('/');
-        startDate = new Date(Number(startYear), Number(startMonth) - 1, 1);
-        endDate = new Date(Number(endYear), Number(endMonth) - 1, 1);
-
-        if (startDate > endDate) {
-            $("#error-text").text("La date de début ne peut pas être postérieure à la date de fin.");
-            return;
-        }        
-        
-        console.log("Calling generatedTimesForDates");
-
-        // Call the server-side function to generate times        
-        google.script.run.generatedTimesForDates(startDate.valueOf(), endDate.valueOf(), deleteExistingTimes);
-
-        console.log("Closing the dialog");
-        google.script.host.close();
-    }
-
-    function cancel() {
-        google.script.host.close();
-    }
+        function cancel() {
+            google.script.host.close();
+        }
 
 
-    // When the page is ready, initialize the datepicker
-    $(document).ready(function () {
-        // Initialize the datepicker for month/year selection only
-        $('.date-pickers').datepicker({
-            dateFormat: "mm/yy",
-            changeMonth: true,
-            changeYear: true,
-            showButtonPanel: true,
-            minDate: new Date(2020, 0, 1), // January 1, 2020
-            maxDate: new Date(),
+        // When the page is ready, initialize the datepicker
+        $(document).ready(function () {
+            // Initialize the datepicker for month/year selection only
+            $('.date-pickers').datepicker({
+                dateFormat: "mm/yy",
+                changeMonth: true,
+                changeYear: true,
+                showButtonPanel: true,
+                minDate: new Date(2020, 0, 1), // January 1, 2020
+                maxDate: new Date(),
 
-            onClose: function (dateText, inst) {
-                var month = $("#ui-datepicker-div .ui-datepicker-month :selected").val();
-                var year = $("#ui-datepicker-div .ui-datepicker-year :selected").val();
-                $(this).datepicker('setDate', new Date(year, month, 1));
-            }
+                onClose: function (dateText, inst) {
+                    var month = $("#ui-datepicker-div .ui-datepicker-month :selected").val();
+                    var year = $("#ui-datepicker-div .ui-datepicker-year :selected").val();
+                    $(this).datepicker('setDate', new Date(year, month, 1));
+                }
+            });
+
+            // Show spinner and disable dropdown before loading
+            $("#projectPicker").prop("disabled", true);
+            $("#project-spinner").show();
+
+            // Load projects from server
+            google.script.run.withSuccessHandler(function (projects) {
+                var $picker = $("#projectPicker");
+                $picker.empty();
+                if (projects && projects.length) {
+                    $picker.append($('<option>', { value: '', text: 'Sélectionnez un projet...' }));
+                    projects.forEach(function (proj) {
+                        $picker.append($('<option>', { value: proj.id, text: proj.name }));
+                    });
+                } else {
+                    $picker.append($('<option>', { value: '', text: 'Aucun projet disponible' }));
+                }
+                $picker.prop("disabled", false);
+                $("#project-spinner").hide();
+            }).getProjects();
         });
-    });
-
     </script>
 </body>
 
