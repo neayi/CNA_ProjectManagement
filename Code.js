@@ -18,7 +18,7 @@ function CreateDeclaredTimes() {
     SpreadsheetApp.getUi().showModalDialog(html, 'Choisir les dates de début et de fin');
 }
 
-function generatedTimesForDates(startDate, endDate, deleteExistingTimes) {
+function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectName) {
     startDate = new Date(startDate);
     endDate = new Date(endDate);
 
@@ -32,7 +32,7 @@ function generatedTimesForDates(startDate, endDate, deleteExistingTimes) {
             let existingDeclaredTimes = DeclaredTime.getDeclaredTimes();
 
             for (let i = existingDeclaredTimes.length - 1; i >= 1; i--) {
-                if (isDateInRange(existingDeclaredTimes[i].month, startDate, endDate)) {
+                if (isDateInRange(existingDeclaredTimes[i].month, startDate, endDate) && existingDeclaredTimes[i].project === projectName) {
                     declaredTimesSheet.deleteRow(i + 2); // +2 because the first row is the header and the index is 0-based
                 }
             }
@@ -44,98 +44,235 @@ function generatedTimesForDates(startDate, endDate, deleteExistingTimes) {
     // Don't forget to flush the spreadsheet and cache before starting the generation.
     flushSpreadsheetAndCache();
 
-    // TODO: We could add a step here to select the projects on which we want to work.
-
 
     // Start by getting the budgeted times for each work package and each person, per year.
-    let employees = Employee.getEmployees().filter(employee => {
-        return employee.hasWorkedBetween(startDate, endDate); // && employee.name == "Laurence Fontaine";
-    });
+    let employeesNames = BudgetedTime.getEmployeesWithBudgetedTimes(projectName);
+    
+    let employees = new Map();
+    
+    Employee.getEmployees().filter(employee => {
+        if (employeesNames.indexOf(employee.name) !== -1 && 
+            employee.hasWorkedBetween(startDate, endDate)
+            // && employee.name == "Laurence Fontaine";
+        ) {
+            employees.set(employee.name, employee);
+    }});
 
-    Logger.log("Found " + employees.length + " employees who have worked between " + startDate + " and " + endDate);
+    Logger.log("Found " + employees.size + " employees who have worked between " + startDate + " and " + endDate);
     Logger.log(employees);
 
-    employees.forEach(employee => {
-        let budgetedTimes = employee.getBudgetedTimesOnProjects(startDate, endDate); // returns an array of projects that the employee has budgeted times on, between the two dates
+    let workPackages = WorkPackage.getWorkPackagesForProject(projectName);
 
-        budgetedTimes.forEach(budgetedTime => {
-            for (let year = startDate.getFullYear(); year <= endDate.getFullYear(); year++) {
-                let declaredTimeOnProject = employee.getDeclaredTimeForYearAndProject(year, budgetedTime.project); // returns the declared time for the employee for the given year
+    const startYear = startDate.getFullYear();
+    const endYear = endDate.getFullYear();
+    for (let year = startYear; year <= endYear; year++) {
+        // On travaille année par année. 
 
-                if (declaredTimeOnProject < budgetedTime.getBudgetedTimeForYear(year)) {
-                    // If the declared time is less than the budgeted time, we need to generate the missing times.
+        // On créé une matrice d'objets WorkPackage/employee qui contiendra les temps déclarés pour chaque work package et chaque employé.
+        let wpPersons = new Map();
+        employees.forEach(employee => {
+            // On récupère les temps prévus pour ce projet pour chaque employé (Budget par projet et par personne)
+            let budgetKey = employee.name + ' - ' + projectName;
+            employee.budgetTimeForYear = BudgetedTime.getBudgetForWPPerson(budgetKey, year);
+            employee.wpPersons = new Array();
 
-                    let missingTime = budgetedTime.getBudgetedTimeForYear(year) - declaredTimeOnProject;
+            workPackages.forEach(workPackage => {
+                if (workPackage.wpPersons == undefined)
+                    workPackage.wpPersons = new Array();
 
-                    let workPackages = budgetedTime.getWorkPackages();
+                let wpPerson = new DeclaredTimePerPerson(employee.name, workPackage.name, projectName, year);
+                wpPersons.set(wpPerson.getKey(), wpPerson);
+                employee.wpPersons.push(wpPerson);
+                workPackage.wpPersons.push(wpPerson);
 
-                    console.log("Pour l'employé " + employee.name + " et le projet " + budgetedTime.project + ", il reste " + missingTime + " PM à déclarer pour l'année " + year);
-
-                    workPackages.forEach(workPackage => {
-                        if (workPackage.getBudgetedTimeForYear(year) > 0 &&
-                            workPackage.getDeclaredTimeForYear(year) < workPackage.getBudgetedTimeForYear(year)) {
-
-                            if (missingTime <= 0) {
-                                return; // No more time to declare for this project
-                            }
-
-                            let rows = [];
-
-                            let WPMissingTime = workPackage.getBudgetedTimeForYear(year) - workPackage.getDeclaredTimeForYear(year);
-
-                            let timeToDeclare = Math.min(missingTime, WPMissingTime);
-
-                            for (let m = getStartMonth(year, startDate); m <= getEndMonth(year, endDate); m++) {
-                                let workedTime = employee.getWorkedTime(m, year); // in man month
-                                let declaredTimeForMonth = employee.getDeclaredTimeForMonth(m, year); // in man month
-
-                                if (workedTime > declaredTimeForMonth) {
-                                    let newDeclaredTime = Math.min(timeToDeclare, workedTime - declaredTimeForMonth);
-
-                                    rows.push([
-                                        workPackage.name,
-                                        employee.name,
-                                        "01/" + m + "/" + year,
-                                        0, // This is in hours - ignored for the moment
-                                        newDeclaredTime,
-                                        '', // Planifié dans l'année - calculated
-                                        '', // 	Total déclaré dans l'année - calculated
-                                        '', // 	Reste à déclarer dans l'année - calculated
-                                        '', // 	Dispo pour ce collaborateur dans le mois - calculated
-                                        budgetedTime.project // Projet
-                                    ]);
-
-                                    timeToDeclare -= newDeclaredTime;
-                                    missingTime -= newDeclaredTime;
-
-                                    if (timeToDeclare <= 0 || missingTime <= 0) {
-                                        break; // No more time to declare for this work package or this project
-                                    }
-                                }
-                            }
-
-                            if (rows.length > 0) {
-                                // If we have rows to add, we need to add them to the "Temps déclarés" sheet.
-                                let declaredTimesSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Temps déclarés');
-
-                                // Add the new rows
-                                declaredTimesSheet.getRange(declaredTimesSheet.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
-
-                                // Flush the changes to the sheet
-                                flushSpreadsheetAndCache(true);
-                                Logger.log("Ajout de " + rows.length + " lignes dans la feuille 'Temps déclarés' pour l'employé " + employee.name + " et le projet " + budgetedTime.name);
-                            }
-                        }
-                    });
+                // Ensuite, si le temps prévu pour ce projet et cet employé est zéro, alors on met le temps déclaré à zéro pour chacun des work packages/employé
+                if (employee.budgetTimeForYear === 0) {
+                    wpPerson.setAsNotWorked();
                 }
-
-            }
-
+            });
         });
 
-    });
+        // Pour chaque work package, on regarde les personnes qui bossent dessus. On enlève les personnes qui n'ont pas de temps prévu sur le projet. 
+        workPackages.forEach(workPackage => {
+            workPackage.employees = new Map();
+            workPackage.employeesNames.forEach(employeeName => {
+                let employee = employees.get(employeeName);
+                if (employee && employee.budgetTimeForYear > 0) {
+                    workPackage.employees.set(employeeName, employee);
+
+                    let wpPerson = wpPersons.get(DeclaredTimePerPerson.makeKey(employee.name, workPackage.name, projectName, year));
+                    if (wpPerson)
+                        wpPerson.isTarget = true; // This is the target person for the work package
+                }
+            });
+
+            // Si il n'y a qu'une personne pour ce WP, alors on lui affecte le temps prévu pour le WP sur l'année.
+            if (workPackage.employees.size === 1) {
+                let employeeName = workPackage.employees.keys().next().value;
+                let employee = employees.get(employeeName);
+                if (employee) {
+                    let wpPerson = wpPersons.get(DeclaredTimePerPerson.makeKey(employee.name, workPackage.name, projectName, year));
+                    if (wpPerson) {
+                        wpPerson.addDeclaredTime(Math.min(workPackage.getRemainingBudgetedTime(year), employee.getRemainingBudgetedTime()));
+                    }
+                }
+            }
+        });
+
+        // Ensuite, pour chaque personne, on ajoute des temps à chaque WP, dans la limite du temps prévu pour cette personne et pour ce WP 
+        employees.forEach(employee => {
+            const averageRemainingBudgetedTime = employee.getAverageRemainingBudgetedTime();
+
+            workPackages.forEach(workPackage => {
+                if (!workPackage.employees.has(employee.name))
+                    return; // Si l'employé n'est pas prévu sur ce WP, on passe au suivant
+
+                let wpPerson = wpPersons.get(DeclaredTimePerPerson.makeKey(employee.name, workPackage.name, projectName, year));
+                if (wpPerson && wpPerson.budgetedTime == 0) {
+                    wpPerson.addDeclaredTime(Math.min(workPackage.getRemainingBudgetedTime(year), averageRemainingBudgetedTime));
+                }
+            });
+        });
+
+        // Deuxième passe, cette fois on complète les temps pour chaque personne, en fonction du temps restant à déclarer pour chaque WP.
+        employees.forEach(employee => {
+            workPackages.forEach(workPackage => {
+                if (!workPackage.employees.has(employee.name))
+                    return; // Si l'employé n'est pas prévu sur ce WP, on passe au suivant
+
+                let wpPerson = wpPersons.get(DeclaredTimePerPerson.makeKey(employee.name, workPackage.name, projectName, year));
+                if (wpPerson) {
+                    wpPerson.addDeclaredTime(Math.min(workPackage.getRemainingBudgetedTime(year), employee.getRemainingBudgetedTime()));
+                }
+            });
+        });
+
+        // S'il reste du temps à déclarer pour une personne, on l'affecte aux WP qui ne sont pas encore remplis, même si la personne n'était pas prévue au départ
+        employees.forEach(employee => {
+            workPackages.forEach(workPackage => {
+                let wpPerson = wpPersons.get(DeclaredTimePerPerson.makeKey(employee.name, workPackage.name, projectName, year));
+                if (wpPerson) {
+                    wpPerson.addDeclaredTime(Math.min(workPackage.getRemainingBudgetedTime(year), employee.getRemainingBudgetedTime()));
+                }
+            });
+        });
+
+        // On affiche les résultats dans la console pour debug
+        debugLog(employees, workPackages, wpPersons, projectName, year);
+
+        // Maintenant, on va ajouter les temps déclarés dans la feuille "Temps déclarés"
+        employees.forEach(employee => {
+
+            workPackages.forEach(workPackage => {
+                const key = DeclaredTimePerPerson.makeKey(employee.name, workPackage.name, projectName, year);
+                let wpPerson = wpPersons.get(key);
+
+                if (wpPerson == false || wpPerson.budgetedTime == 0)
+                    return;
+
+                console.log("Adding declared time for " + employee.name + " on " + workPackage.name + " for year " + year + ": " + wpPerson.budgetedTime);
+
+                let WPYearlyMissingTime = wpPerson.budgetedTime - employee.getDeclaredTimeForYearAndWorkPackage(year, workPackage.name);
+
+                if (WPYearlyMissingTime <= 0)
+                    return; // Si le temps déclaré est déjà supérieur ou égal au temps prévu, on ne fait rien
+
+                let rows = [];
+
+                let months = new Set(); // de 1 à 12
+
+                // Commencer par identifier les ordres de mission pour ce salarié sur ce projet dans cette année 
+                let missions = Mission.getMissionsForEmployee(employee.name, workPackage.name, year);
+                missions.forEach(mission => {
+                    const m = mission.month.getMonth() + 1;
+
+                    if (m >= getStartMonth(year, startDate) && m <= getEndMonth(year, endDate)) {
+                        months.add(m);
+                    }
+                });
+
+                // Ajouter les autres mois de l'année
+                for (let m = getStartMonth(year, startDate); m <= getEndMonth(year, endDate); m++) {
+                    months.add(m);
+                }
+
+                console.log(Array.from(months));
+
+                for (const m of months) {
+                    let workedTime = employee.getWorkedTime(m, year); // Temps travaillé par le salarié
+                    let declaredTimeForMonth = employee.getDeclaredTimeForMonth(m, year); // temps déjà déclaré pour ce mois
+                    let remainingTimeForMonth = workedTime - declaredTimeForMonth; // Temps restant à déclarer pour ce mois
+
+                    if (remainingTimeForMonth <= 0)
+                        continue; // Si le temps travaillé est inférieur ou égal au temps déjà déclaré, on ne fait rien
+                    
+                    let newDeclaredTime = Math.min(WPYearlyMissingTime, remainingTimeForMonth); // On ne peut pas déclarer plus que le temps travaillé moins le temps déjà déclaré
+
+                    rows.push([
+                        workPackage.name,
+                        employee.name,
+                        "01/" + m + "/" + year,
+                        0, // This is in hours - ignored for the moment
+                        newDeclaredTime,
+                        '', // Planifié dans l'année - calculated
+                        '', // 	Total déclaré dans l'année - calculated
+                        '', // 	Reste à déclarer dans l'année - calculated
+                        '', // 	Dispo pour ce collaborateur dans le mois - calculated
+                        '', // 	Reste dispo pour ce collaborateur dans le mois - calculated
+                        projectName // Projet
+                    ]);
+
+                    WPYearlyMissingTime -= newDeclaredTime;
+
+                    if (WPYearlyMissingTime <= 0) {
+                        break; // No more time to declare for this work package or this project
+                    }
+                }
+
+                if (rows.length > 0) {
+                    // If we have rows to add, we need to add them to the "Temps déclarés" sheet.
+                    let declaredTimesSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Temps déclarés');
+
+                    // Add the new rows
+                    declaredTimesSheet.getRange(declaredTimesSheet.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
+
+                    // Flush the changes to the sheet
+                    flushSpreadsheetAndCache(true);
+                    Logger.log("Ajout de " + rows.length + " lignes dans la feuille 'Temps déclarés' pour l'employé " + employee.name + " et le projet " + projectName);
+                }
+            });
+        });
+    }    // For each year
 
     SpreadsheetApp.getUi().alert("Les temps ont été générés.");
+}
+
+function debugLog(employees, workPackages, wpPersons, projectName, year) {
+
+    let row = ["Tps travaillé"];
+    workPackages.forEach(workPackage => {
+        row.push(workPackage.name);
+    });
+    console.log(row.join("\t"));
+
+    employees.forEach(employee => {
+        let row = [employee.name];
+
+        workPackages.forEach(workPackage => {
+            let wpPerson = wpPersons.get(DeclaredTimePerPerson.makeKey(employee.name, workPackage.name, projectName, year));
+            if (wpPerson) {
+                row.push(String(wpPerson.budgetedTime).replace('.', ',')); // Replace dots with commas for decimal values
+            } else {
+                row.push(0);
+            }
+        });
+
+        row.push('');
+        row.push(String(employee.budgetTimeForYear).replace('.', ','));
+
+        console.log(row.join("\t"));
+    });
+
 }
 
 // utilities
@@ -173,6 +310,8 @@ function flushSpreadsheetAndCache(ClearDeclaredTimesOnly = false) {
         BudgetedTime.allBudgetedTimes = [];
         Employee.allEmployees = [];
         WorkedTime.allWorkedTimes = [];
+        Project.allProjects = [];
+        // Missions.allMissions = []; // Since this data is imported, it won't change during our process
     }
 }
 

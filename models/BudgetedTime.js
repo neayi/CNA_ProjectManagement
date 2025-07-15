@@ -1,3 +1,7 @@
+/**
+ * This class models the "Budget par projet et par personne" sheet.
+ */
+
 class BudgetedTime {
     constructor(row, headers) {
 
@@ -47,4 +51,21 @@ class BudgetedTime {
         });
     }
 
+    static getEmployeesWithBudgetedTimes(projectName) {
+        return BudgetedTime.getBudgetedTimes().filter(budgetedTime => {
+            return budgetedTime.project === projectName;
+        }).map(budgetedTime => budgetedTime.employee);
+    }
+
+    static getBudgetForWPPerson(workPackageName, year) {
+        let budgetedTimes = BudgetedTime.getBudgetedTimes().filter(budgetedTime => {
+            return budgetedTime.name === workPackageName;
+        });
+
+        if (budgetedTimes.length === 0) {
+            return 0; // No budgeted time found for this work package
+        }
+
+        return budgetedTimes[0].getBudgetedTimeForYear(year);
+    }
 }

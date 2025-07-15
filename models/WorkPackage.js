@@ -1,9 +1,15 @@
+/**
+ * This class models the "Work packages" sheet.
+ */
+
 class WorkPackage {
   constructor(row, headers) {
 
     this.name = getValue(row, headers, 'Work package');
     this.employee = getValue(row, headers, 'Nom');
     this.project = getValue(row, headers, 'Projet');
+    this.employeesNames = getValue(row, headers, 'Personnes affectées').split(',').map(e => e.trim());
+    this.wpCode = getValue(row, headers, 'Numero du workpackage');
 
     this.budgetedTimes = new Map();
 
@@ -36,14 +42,38 @@ class WorkPackage {
     return WorkPackage.allWorkPackages;
   }
 
+  static getDeclaredTimeForYear(year) {
+    return DeclaredTime.getDeclaredTimes().filter(declaredTime => {
+      return declaredTime.wp === this.name && declaredTime.month.getFullYear() === year;
+    }).reduce((total, declaredTime) => total + declaredTime.declaredTime, 0);
+  }
+
+  static getWorkPackagesForProject(projectName) {
+    return WorkPackage.getWorkPackages().filter(workPackage => {
+      return workPackage.project === projectName;
+    });
+  }
+
+  static getWorkPackageForProjectAndCode(projectName, wpCode) {
+    return WorkPackage.getWorkPackages().find(workPackage => {
+      return workPackage.project === projectName && workPackage.wpCode === wpCode;
+    });
+  }
 
   getBudgetedTimeForYear(year) {
     return this.budgetedTimes.get(year.toString()) || 0; // Return 0 if no budgeted time for the year
   }
 
-  getDeclaredTimeForYear(year) {
-    return DeclaredTime.getDeclaredTimes().filter(declaredTime => {
-      return declaredTime.wp === this.name && declaredTime.month.getFullYear() === year;
-    }).reduce((total, declaredTime) => total + declaredTime.declaredTime, 0);
+  /**
+   * Returns the budgeted time for this work package for the current year and substract the times already accounted for by each employee
+   */
+  getRemainingBudgetedTime(year) {
+    let budgetedTime = this.getBudgetedTimeForYear(year);
+    
+    this.wpPersons.forEach(wpPerson => {
+      budgetedTime -= wpPerson.budgetedTime;
+    });
+
+    return Math.max(budgetedTime, 0);
   }
 }

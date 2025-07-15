@@ -75,8 +75,14 @@ class Employee {
 
     getDeclaredTimeForYearAndProject(year, project) {
         return DeclaredTime.getDeclaredTimes().filter(declaredTime => {
-                return declaredTime.employee === this.name && declaredTime.month.getFullYear() === year && declaredTime.project === project;
-            }).reduce((total, declaredTime) => total + declaredTime.declaredTime, 0);
+            return declaredTime.employee === this.name && declaredTime.month.getFullYear() === year && declaredTime.project === project;
+        }).reduce((total, declaredTime) => total + declaredTime.declaredTime, 0);
+    }
+
+    getDeclaredTimeForYearAndWorkPackage(year, workPackage) {
+        return DeclaredTime.getDeclaredTimes().filter(declaredTime => {
+            return declaredTime.employee === this.name && declaredTime.month.getFullYear() === year && declaredTime.wp === workPackage;
+        }).reduce((total, declaredTime) => total + declaredTime.declaredTime, 0);
     }
 
     /**
@@ -87,10 +93,33 @@ class Employee {
      */
     getDeclaredTimeForMonth(month, year) {
         return DeclaredTime.getDeclaredTimes().filter(declaredTime => {
-                return declaredTime.employee === this.name && 
-                       declaredTime.month.getMonth() === (month - 1) &&
-                       declaredTime.month.getFullYear() === year;
-            }).reduce((total, declaredTime) => total + declaredTime.declaredTime, 0);
+            return declaredTime.employee === this.name &&
+                declaredTime.month.getMonth() === (month - 1) &&
+                declaredTime.month.getFullYear() === year;
+        }).reduce((total, declaredTime) => total + declaredTime.declaredTime, 0);
+    }
+
+    /**
+     * Returns the budgeted time for this work package for the current year and substract the times already accounted for by each WP
+     */
+    getRemainingBudgetedTime() {
+        let budgetedTime = this.budgetTimeForYear;
+
+        this.wpPersons.forEach(wpPerson => {
+            budgetedTime -= wpPerson.budgetedTime;
+        });
+
+        return Math.max(budgetedTime, 0);
+    }
+
+    /**
+     * Same as getRemainingBudgetedTime, but we divide the remaining budgeted time by the number of work packages that have times left to fill up
+     */
+    getAverageRemainingBudgetedTime() {
+        let remainingWPCount = this.wpPersons.filter(wpPerson => (wpPerson.budgetedTime == 0 && wpPerson.isTarget)).length;
+        if (remainingWPCount === 0) return 0;
+
+        return this.getRemainingBudgetedTime() / remainingWPCount;
     }
 }
 

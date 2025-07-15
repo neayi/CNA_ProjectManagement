@@ -2,10 +2,10 @@ function GenerationTest() {
     flushSpreadsheetAndCache(); // Ensure the spreadsheet and cache are flushed before starting the test
 
     // Test the different models
-    let startDate = new Date('2025-01-01');
-    let endDate = new Date('2025-12-01');
+    let startDate = new Date('2024-01-01');
+    let endDate = new Date('2024-12-01');
 
-    generatedTimesForDates(startDate, endDate, true);
+    generateTimesForDates(startDate, endDate, false, 'NBSOIL');
 }
 
 function UnitTest() {

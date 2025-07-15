@@ -116,12 +116,12 @@
         <form id="myForm" aria-label="Dates selection form">
             <div class="row">
                 <div class="col mb-3">
-                    <label for="projectPicker" class="form-label">Projet :</label>
+                    <label for="projectPicker" class="form-label">Projet : <span id="project-spinner" class="spinner-border spinner-border-sm text-primary ms-2" role="status"
+                        aria-hidden="true"></span></label>
                     <select id="projectPicker" name="projectId" class="form-select" disabled>
                         <option value="">Chargement des projets...</option>
                     </select>
-                    <span id="project-spinner" class="spinner-border spinner-border-sm text-primary ms-2" role="status"
-                        aria-hidden="true"></span>
+                    
                 </div>
             </div>
             <div class="row">
@@ -188,7 +188,7 @@
                 return;
             }
 
-            google.script.run.generatedTimesForDates(startDate.valueOf(), endDate.valueOf(), deleteExistingTimes, projectId);
+            google.script.run.generateTimesForDates(startDate.valueOf(), endDate.valueOf(), deleteExistingTimes, projectId);
             google.script.host.close();
         }
 
