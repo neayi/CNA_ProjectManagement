@@ -58,13 +58,16 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
     
     let employees = new Map();
     
-    Employee.getEmployees().filter(employee => {
+    Employee.getEmployees().forEach(employee => {
         if (employeesNames.indexOf(employee.name) !== -1 && 
             employee.hasWorkedBetween(startDate, endDate)
             // && employee.name == "Laurence Fontaine";
         ) {
             employees.set(employee.name, employee);
     }});
+
+    // On trie les employés par salaires (décroissant) pour charger avant tout ceux avec un plus gros salaire et éviter de déclarer des temps sur des stagiaires par exemple
+    employees = new Map([...employees.entries()].sort((a, b) => b[1].salary - a[1].salary));
 
     // On créé une liste de workpackages, qui nous seront nécessaires pour manipuler les données de wpPersons au niveau de chaque workpackage
     let workPackages = WorkPackage.getWorkPackagesForProject(projectName);

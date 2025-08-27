@@ -8,6 +8,19 @@ function GenerationTest() {
     generateTimesForDates(startDate, endDate, false, 'NBSOIL');
 }
 
+function testEmployeesSort() {
+    let employees = new Map();
+    
+    Employee.getEmployees().forEach(employee => {
+      employees.set(employee.name, employee);
+    });
+
+    // On trie les employés par salaires (décroissant) pour charger avant tout ceux avec un plus gros salaire et éviter de déclarer des temps sur des stagiaires par exemple
+    employees = new Map([...employees.entries()].sort((a, b) => b[1].salary - a[1].salary));
+
+    Logger.log([...employees]);
+}
+
 function UnitTest() {
     flushSpreadsheetAndCache(); // Ensure the spreadsheet and cache are flushed before starting the test
 

@@ -5,6 +5,16 @@ class Employee {
         this.startDate = getDateValue(row, headers, 'Entrée');
         this.endDate = getDateValue(row, headers, 'Sortie');
 
+        this.salary = 0;
+
+        headers.forEach(fieldName => {
+            if (fieldName.match(/^ETP/)) {
+                let salary = getValue(row, headers, fieldName);
+                if (salary > 0)
+                    this.salary = salary;
+            }
+        });
+
         this.declaredTimes = new Map();
     }
 
