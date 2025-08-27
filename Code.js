@@ -22,7 +22,19 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
     startDate = new Date(startDate);
     endDate = new Date(endDate);
 
-    Logger.log("Génération des temps déclarés pour les dates entre " + startDate + " et " + endDate + " (deleteExistingTimes = " + deleteExistingTimes + ")");
+    const currentUser = getCurrentUser();
+    const currentDate = new Date().toLocaleDateString('fr-FR');
+
+    Logger.log("Génération des temps déclarés pour les dates entre " + startDate + " et " + endDate + " (deleteExistingTimes = " + deleteExistingTimes + ") par " + currentUser);
+
+    let declaredTimesSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Temps déclarés');
+
+    // On garde la dernière ligne générée pour récupérer les formules calculées
+    const lastGoodFormulasRowIndex = declaredTimesSheet.getLastRow(); // On pourrait améliorer en vérifiant que les formules ne sont effectivement pas vides
+    
+    // On copie les formules calculées pour les utiliser plus tard au moment de générer de nouvelles lignes
+    let formulasFJ = declaredTimesSheet.getRange(lastGoodFormulasRowIndex, 6, 1, 5).getFormulasR1C1();
+    let formulasLR = declaredTimesSheet.getRange(lastGoodFormulasRowIndex, 12, 1, 7).getFormulasR1C1();
 
     // If deleteExistingTimes is true, we will delete the existing times in the "Temps déclarés" sheet.
     if (deleteExistingTimes) {
@@ -41,10 +53,6 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
         }
     }
 
-    // Don't forget to flush the spreadsheet and cache before starting the generation.
-    flushSpreadsheetAndCache();
-
-
     // Start by getting the budgeted times for each work package and each person, per year.
     let employeesNames = BudgetedTime.getEmployeesWithBudgetedTimes(projectName);
     
@@ -58,28 +66,36 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
             employees.set(employee.name, employee);
     }});
 
-    Logger.log("Found " + employees.size + " employees who have worked between " + startDate + " and " + endDate);
-    Logger.log(employees);
-
+    // On créé une liste de workpackages, qui nous seront nécessaires pour manipuler les données de wpPersons au niveau de chaque workpackage
     let workPackages = WorkPackage.getWorkPackagesForProject(projectName);
+
+    Logger.log("Found " + employees.size + " employees who have worked between " + startDate + " and " + endDate);
+    Logger.log([...employees]);
 
     const startYear = startDate.getFullYear();
     const endYear = endDate.getFullYear();
     for (let year = startYear; year <= endYear; year++) {
         // On travaille année par année. 
+       flushSpreadsheetAndCache();
 
         // On créé une matrice d'objets WorkPackage/employee qui contiendra les temps déclarés pour chaque work package et chaque employé.
         let wpPersons = new Map();
+    
+        workPackages.forEach(workPackage => {
+            workPackage.wpPersons = new Array();
+        });
+
         employees.forEach(employee => {
+            employee.wpPersons = new Array();
+
             // On récupère les temps prévus pour ce projet pour chaque employé (Budget par projet et par personne)
             let budgetKey = employee.name + ' - ' + projectName;
             employee.budgetTimeForYear = BudgetedTime.getBudgetForWPPerson(budgetKey, year);
-            employee.wpPersons = new Array();
+        });
 
+        // On commence par initialiser wpPersons:
+        employees.forEach(employee => {
             workPackages.forEach(workPackage => {
-                if (workPackage.wpPersons == undefined)
-                    workPackage.wpPersons = new Array();
-
                 let wpPerson = new DeclaredTimePerPerson(employee.name, workPackage.name, projectName, year);
                 wpPersons.set(wpPerson.getKey(), wpPerson);
                 employee.wpPersons.push(wpPerson);
@@ -219,7 +235,16 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
                         '', // 	Reste à déclarer dans l'année - calculated
                         '', // 	Dispo pour ce collaborateur dans le mois - calculated
                         '', // 	Reste dispo pour ce collaborateur dans le mois - calculated
-                        projectName // Projet
+                        projectName, // Projet
+                        '', // Reporting period
+                        '', // Année
+                        '', // Salaire
+                        '', // Salaire ETP
+                        '', // Coût réel
+                        '', // FTE
+                        '', // Statut
+                        currentDate, // Date de génération
+                        currentUser  // Acteur de la génération
                     ]);
 
                     WPYearlyMissingTime -= newDeclaredTime;
@@ -231,10 +256,15 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
 
                 if (rows.length > 0) {
                     // If we have rows to add, we need to add them to the "Temps déclarés" sheet.
-                    let declaredTimesSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Temps déclarés');
 
+                    const newRowIndex = declaredTimesSheet.getLastRow() + 1;
                     // Add the new rows
-                    declaredTimesSheet.getRange(declaredTimesSheet.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
+                    declaredTimesSheet.getRange(newRowIndex, 1, rows.length, rows[0].length).setValues(rows);
+
+                    rows.forEach((row, index) => {
+                        declaredTimesSheet.getRange(newRowIndex + index, 6, 1, 5).setFormulasR1C1(formulasFJ);     
+                        declaredTimesSheet.getRange(newRowIndex + index, 12, 1, 7).setFormulasR1C1(formulasLR);
+                    });
 
                     // Flush the changes to the sheet
                     flushSpreadsheetAndCache(true);
@@ -364,4 +394,15 @@ function getProjects() {
         id: project.project,
         name: project.project
     }));
+}
+
+function getCurrentUser() {
+  const email = Session.getActiveUser().getEmail();
+  if (!email) return "Utilisateur inconnu";
+
+  const localPart = email.split("@")[0]; // avant le @
+  const parts = localPart.split(".");
+  const firstName = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+  
+  return firstName;
 }

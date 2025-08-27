@@ -116,16 +116,6 @@
         <form id="myForm" aria-label="Dates selection form">
             <div class="row">
                 <div class="col mb-3">
-                    <label for="projectPicker" class="form-label">Projet : <span id="project-spinner" class="spinner-border spinner-border-sm text-primary ms-2" role="status"
-                        aria-hidden="true"></span></label>
-                    <select id="projectPicker" name="projectId" class="form-select" disabled>
-                        <option value="">Chargement des projets...</option>
-                    </select>
-                    
-                </div>
-            </div>
-            <div class="row">
-                <div class="col mb-3">
                     <label for="startDate" class="form-label">Date de début :</label>
                     <input type="text" id="datepickerStart" name="dateStart" class="form-control date-pickers"
                         autocomplete="off" readonly="readonly" style="width: 128px; text-align: right;">
@@ -136,12 +126,14 @@
                         autocomplete="off" readonly="readonly" style="width: 128px; text-align: right;">
                 </div>
             </div>
-
             <div class="row">
                 <div class="col mb-3">
-                    <input type="checkbox" id="deleteExistingTimes" name="deleteExistingTimes" class="form-check-input" >
-                    <label for="deleteExistingTimes" class="form-label">Supprimer les temps existants dans cette plage</label>
-
+                    <label for="projectPicker" class="form-label">Projet : <span id="project-spinner" class="spinner-border spinner-border-sm text-primary ms-2" role="status"
+                        aria-hidden="true"></span></label>
+                    <select id="projectPicker" name="projectId" class="form-select" disabled>
+                        <option value="">Chargement des projets...</option>
+                    </select>
+                    
                 </div>
             </div>
 
@@ -165,7 +157,6 @@
         function startGeneration() {
             let startDate = $("#datepickerStart").val();
             let endDate = $("#datepickerEnd").val();
-            let deleteExistingTimes = $("#deleteExistingTimes").is(":checked");
             let projectId = $("#projectPicker").val();
 
             if (!projectId) {
@@ -188,7 +179,7 @@
                 return;
             }
 
-            google.script.run.generateTimesForDates(startDate.valueOf(), endDate.valueOf(), deleteExistingTimes, projectId);
+            google.script.run.generateTimesForDates(startDate.valueOf(), endDate.valueOf(), false, projectId);
             google.script.host.close();
         }
 

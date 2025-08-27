@@ -26,8 +26,12 @@ class Project {
 
     Project.allProjects = data.map(row => new Project(row, headers));
 
+    Project.allProjects = Project.allProjects.filter(project => project.isValid());
+
     return Project.allProjects;
   }
 
-
+  isValid() {
+    return this.project && this.project.trim() !== "";
+  }
 }
