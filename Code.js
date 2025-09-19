@@ -34,7 +34,7 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
     
     // On copie les formules calculées pour les utiliser plus tard au moment de générer de nouvelles lignes
     let formulasFJ = declaredTimesSheet.getRange(lastGoodFormulasRowIndex, 6, 1, 5).getFormulasR1C1();
-    let formulasLR = declaredTimesSheet.getRange(lastGoodFormulasRowIndex, 12, 1, 7).getFormulasR1C1();
+    let formulasLU = declaredTimesSheet.getRange(lastGoodFormulasRowIndex, 12, 1, 10).getFormulasR1C1();
 
     // If deleteExistingTimes is true, we will delete the existing times in the "Temps déclarés" sheet.
     if (deleteExistingTimes) {
@@ -246,6 +246,9 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
                         '', // Coût réel
                         '', // FTE
                         '', // Statut
+                        '', // Temps travaillé en heure sur la période sur  tous les projets
+                        '', // Daily rate
+                        '', // Coût
                         currentDate, // Date de génération
                         currentUser  // Acteur de la génération
                     ]);
@@ -266,7 +269,7 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
 
                     rows.forEach((row, index) => {
                         declaredTimesSheet.getRange(newRowIndex + index, 6, 1, 5).setFormulasR1C1(formulasFJ);     
-                        declaredTimesSheet.getRange(newRowIndex + index, 12, 1, 7).setFormulasR1C1(formulasLR);
+                        declaredTimesSheet.getRange(newRowIndex + index, 12, 1, 10).setFormulasR1C1(formulasLU);
                     });
 
                     // Flush the changes to the sheet
