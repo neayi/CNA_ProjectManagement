@@ -121,7 +121,7 @@ class WorkedTime {
             if (mode === 'CNA') {
                 employee = getValue(row, salariesHeaders, 'Collaborateur');
             } else {
-                employee = getValue(row, salariesHeaders, 'Code CEGID Salarié');
+                employee = getValue(row, salariesHeaders, 'N° CEGID');
             }
 
             let month = getDateValue(row, salariesHeaders, 'Mois');
@@ -165,7 +165,7 @@ class WorkedTime {
                 let nom = getValue(row, importSalariesHeaders, 'Nom');
                 let prenom = getValue(row, importSalariesHeaders, 'Prénom');
 
-                employee = titleCase(prenom) + ' ' + titleCase(nom); // Collaborateur nom projets
+                employee = prenom + ' ' + nom; // Collaborateur nom projets
 
                 month = getDateValue(row, importSalariesHeaders, 'Date');
                 salary = getValue(row, importSalariesHeaders, 'Cout global (attention comprends des frais déplacements)');
@@ -243,6 +243,12 @@ class WorkedTime {
 
         let headers = values.shift(); // get the titles row
 
+        let mode = 'CNA';
+        let index = headers.indexOf('N° salarié');
+        if (index >= 0) {
+            mode = 'VER DE TERRE';
+        }
+
         let employees = new Map();
 
         // Start by getting the list of employees
@@ -283,8 +289,15 @@ class WorkedTime {
             employeeData.anniversaryDate = getDateValue(row, headers, "Date anniversaire");
             employeeData.annualRaise = getValue(row, headers, "Augmentation annuelle automatique");
 
+            if (mode === 'VER DE TERRE') {
+                employeeData.cegid = getValue(row, headers, "N° salarié");
+            }
+
             employees.set(employeeName, employeeData);
         });
+
+        Logger.log("Employees: ");
+        Logger.log([...employees]);
 
         // Generate new "virtual" rows for annual raises
         employees.forEach((employee, key) => {
@@ -308,7 +321,7 @@ class WorkedTime {
                 let key = getDateKey(d);
 
                 if (employee.salaries.has(key)) {
-                    console.log("Found a custom raise for employee " + employee.number + " on date " + key);
+                    console.log("Found a custom raise for employee " + employee.name + " on date " + key);
 
                     let salary = employee.salaries.get(key);
                     lastSalary = salary.salary;
@@ -334,7 +347,7 @@ class WorkedTime {
                     salaryRow.time = lastAverageTime;
 
                     employee.salaries.set(key, salaryRow);
-                    console.log("Adding a salary row for employee " + employee.number + " (anniversary): ");
+                    console.log("Adding a salary row for employee " + employee.name + " (anniversary): ");
                     console.log(salaryRow);
                 }
             }
@@ -362,7 +375,7 @@ class WorkedTime {
                 if (mode === 'CNA') {
                     newRow = WorkedTime.getWorkedRowCNA(employee.name, d, currentSalary.salary, currentSalary.time, currentSalary.status, lastRow + newValues.length + 1);
                 } else {
-                    newRow = WorkedTime.getWorkedRowVDT(employee.name, cegid, d, currentSalary.salary, currentSalary.time, currentSalary.status, lastRow + newValues.length + 1);
+                    newRow = WorkedTime.getWorkedRowVDT(employee.name, employee.cegid, d, currentSalary.salary, currentSalary.time, currentSalary.status, lastRow + newValues.length + 1);
                 }
 
                 newValues.push(newRow);
@@ -400,7 +413,7 @@ class WorkedTime {
     static getWorkedRowVDT(name, cegid, month, salary, time, status, rowIndex) {
         let newRow = [];
 
-        newRow.push(name);
+        newRow.push(titleCase(name));
         newRow.push(cegid);
         newRow.push(name);
         newRow.push(getMonthStringForDate(month));
