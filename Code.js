@@ -31,7 +31,7 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
 
     // On garde la dernière ligne générée pour récupérer les formules calculées
     const lastGoodFormulasRowIndex = declaredTimesSheet.getLastRow(); // On pourrait améliorer en vérifiant que les formules ne sont effectivement pas vides
-    
+
     // On copie les formules calculées pour les utiliser plus tard au moment de générer de nouvelles lignes
     let formulasFJ = declaredTimesSheet.getRange(lastGoodFormulasRowIndex, 6, 1, 5).getFormulasR1C1();
     let formulasLU = declaredTimesSheet.getRange(lastGoodFormulasRowIndex, 12, 1, 10).getFormulasR1C1();
@@ -55,11 +55,11 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
 
     // Start by getting the budgeted times for each work package and each person, per year.
     let employeesNames = BudgetedTime.getEmployeesWithBudgetedTimes(projectName);
-    
+
     let employees = new Map();
-    
+
     Employee.getEmployees().forEach(employee => {
-        if (employeesNames.indexOf(employee.name) !== -1 && 
+        if (employeesNames.indexOf(employee.name) !== -1 &&
             employee.hasWorkedBetween(startDate, endDate)
             // && employee.name == "Laurence Fontaine";
         ) {
@@ -78,12 +78,12 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
     const startYear = startDate.getFullYear();
     const endYear = endDate.getFullYear();
     for (let year = startYear; year <= endYear; year++) {
-        // On travaille année par année. 
+        // On travaille année par année.
        flushSpreadsheetAndCache();
 
         // On créé une matrice d'objets WorkPackage/employee qui contiendra les temps déclarés pour chaque work package et chaque employé.
         let wpPersons = new Map();
-    
+
         workPackages.forEach(workPackage => {
             workPackage.wpPersons = new Array();
         });
@@ -111,7 +111,7 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
             });
         });
 
-        // Pour chaque work package, on regarde les personnes qui bossent dessus. On enlève les personnes qui n'ont pas de temps prévu sur le projet. 
+        // Pour chaque work package, on regarde les personnes qui bossent dessus. On enlève les personnes qui n'ont pas de temps prévu sur le projet.
         workPackages.forEach(workPackage => {
             workPackage.employees = new Map();
             workPackage.employeesNames.forEach(employeeName => {
@@ -138,7 +138,7 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
             }
         });
 
-        // Ensuite, pour chaque personne, on ajoute des temps à chaque WP, dans la limite du temps prévu pour cette personne et pour ce WP 
+        // Ensuite, pour chaque personne, on ajoute des temps à chaque WP, dans la limite du temps prévu pour cette personne et pour ce WP
         employees.forEach(employee => {
             const averageRemainingBudgetedTime = employee.getAverageRemainingBudgetedTime();
 
@@ -200,7 +200,7 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
 
                 let months = new Set(); // de 1 à 12
 
-                // Commencer par identifier les ordres de mission pour ce salarié sur ce projet dans cette année 
+                // Commencer par identifier les ordres de mission pour ce salarié sur ce projet dans cette année
                 let missions = Mission.getMissionsForEmployee(employee.name, workPackage.name, year);
                 missions.forEach(mission => {
                     const m = mission.month.getMonth() + 1;
@@ -224,7 +224,7 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
 
                     if (remainingTimeForMonth <= 0)
                         continue; // Si le temps travaillé est inférieur ou égal au temps déjà déclaré, on ne fait rien
-                    
+
                     let newDeclaredTime = Math.min(WPYearlyMissingTime, remainingTimeForMonth); // On ne peut pas déclarer plus que le temps travaillé moins le temps déjà déclaré
 
                     rows.push([
@@ -268,7 +268,7 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
                     declaredTimesSheet.getRange(newRowIndex, 1, rows.length, rows[0].length).setValues(rows);
 
                     rows.forEach((row, index) => {
-                        declaredTimesSheet.getRange(newRowIndex + index, 6, 1, 5).setFormulasR1C1(formulasFJ);     
+                        declaredTimesSheet.getRange(newRowIndex + index, 6, 1, 5).setFormulasR1C1(formulasFJ);
                         declaredTimesSheet.getRange(newRowIndex + index, 12, 1, 10).setFormulasR1C1(formulasLU);
                     });
 
@@ -334,6 +334,17 @@ function getDateValue(row, headers, field) {
         throw new Error(`Le champ '${field}' n'existe pas dans les en-têtes.`);
     }
     return row[index] == '' ? null : new Date(row[index]);
+}
+
+function titleCase(str) {
+  return str
+    .toLowerCase()                 // Tout en minuscules d’abord
+    .split(' ')                    // Séparer les mots
+    .map(word => {
+      if(word.length === 0) return ''; // éviter les mots vides
+      return word[0].toUpperCase() + word.slice(1);
+    })
+    .join(' ');                    // Rejoindre les mots
 }
 
 function flushSpreadsheetAndCache(ClearDeclaredTimesOnly = false) {
@@ -409,6 +420,6 @@ function getCurrentUser() {
   const localPart = email.split("@")[0]; // avant le @
   const parts = localPart.split(".");
   const firstName = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
-  
+
   return firstName;
 }

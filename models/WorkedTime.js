@@ -1,13 +1,24 @@
+/**
+ * Model for the "Salaires collaborateurs" sheet.
+ */
 class WorkedTime {
-    constructor(row, headers) {
-        this.employee = getValue(row, headers, 'Collaborateur');
+    constructor(row, headers, mode) {
+        if (mode === 'CNA') {
+            this.employee = getValue(row, headers, 'Collaborateur');
+
+            this.salaryPerPM = getValue(row, headers, 'Salaire chargé 1 PM (ETP)');
+            this.year = getValue(row, headers, 'Année');
+            this.status = getValue(row, headers, 'Statut');
+        } else {
+            this.employee = getValue(row, headers, 'Collaborateur nom projets');
+
+            this.salaryPerPM = getValue(row, headers, 'Salaire ETP');
+            this.year = getValue(row, headers, 'Année VDT');
+            this.status = getValue(row, headers, 'Statut');
+        }
+
         this.month = getDateValue(row, headers, 'Mois');
         this.salary = getValue(row, headers, 'Salaire chargé réel mensuel');
-
-        this.salaryPerPM = getValue(row, headers, 'Salaire chargé 1 PM (ETP)');
-        this.year = getValue(row, headers, 'Année');
-        this.status = getValue(row, headers, 'Statut');
-
         this.percentWorked = getValue(row, headers, 'PM Effectif');
     }
 
@@ -25,7 +36,13 @@ class WorkedTime {
         let data = sheet.getDataRange().getValues();
         let headers = data.shift();
 
-        WorkedTime.allWorkedTimes = data.map(row => new WorkedTime(row, headers));
+        let mode = 'CNA';
+        let index = headers.indexOf('N° CEGID');
+        if (index >= 0) {
+            mode = 'VER DE TERRE';
+        }
+
+        WorkedTime.allWorkedTimes = data.map(row => new WorkedTime(row, headers, mode));
 
         return WorkedTime.allWorkedTimes;
     }
@@ -46,12 +63,32 @@ class WorkedTime {
         let importSalariesData = importSalariesSheet.getDataRange().getValues();
         let importSalariesHeaders = importSalariesData.shift();
 
+        let mode = 'CNA';
+        let index = importSalariesHeaders.indexOf('Code CEGID Salarié');
+        if (index >= 0) {
+            mode = 'VER DE TERRE';
+        }
+
+        Logger.log("Mise à jour de la feuille 'Salaires collaborateurs' avec le mode : " + mode + ' ' + importSalariesHeaders.join(', '));
+
         // Create a map with the employee name and the month as key, and the salary as value
         let salaryMap = new Map();
         importSalariesData.forEach(row => {
-            let employee = getValue(row, importSalariesHeaders, 'Nom du salarié');
-            let month = getDateValue(row, importSalariesHeaders, 'Période');
-            let salary = getValue(row, importSalariesHeaders, 'Coût global CNA');
+            let employee = '';
+            let month = null;
+            let salary = 0;
+
+            if (mode === 'CNA') {
+                // CNA
+                employee = getValue(row, importSalariesHeaders, 'Nom du salarié');
+                month = getDateValue(row, importSalariesHeaders, 'Période');
+                salary = getValue(row, importSalariesHeaders, 'Coût global CNA');
+            } else {
+                // Ver de terre
+                employee = getValue(row, importSalariesHeaders, 'Code CEGID Salarié');
+                month = getDateValue(row, importSalariesHeaders, 'Date');
+                salary = getValue(row, importSalariesHeaders, 'Cout global (attention comprends des frais déplacements)');
+            }
 
             if (salary > 0 && month) {
                 let key = `${employee}-${getDateKey(month)}`;
@@ -79,8 +116,16 @@ class WorkedTime {
         let salariesHeaders = salariesData.shift();
         let updatedSalaries = [];
         salariesData.forEach(row => {
-            let employee = getValue(row, salariesHeaders, 'Collaborateur');
+            let employee = '';
+
+            if (mode === 'CNA') {
+                employee = getValue(row, salariesHeaders, 'Collaborateur');
+            } else {
+                employee = getValue(row, salariesHeaders, 'Code CEGID Salarié');
+            }
+
             let month = getDateValue(row, salariesHeaders, 'Mois');
+
             if (!month)
                 return;
 
@@ -104,10 +149,28 @@ class WorkedTime {
         const lastRow = salariesSheet.getLastRow();
         let newRows = [];
         importSalariesData.forEach(row => {
-            let employee = getValue(row, importSalariesHeaders, 'Nom du salarié');
-            let month = getDateValue(row, importSalariesHeaders, 'Période');
-            let salary = getValue(row, importSalariesHeaders, 'Coût global CNA');
-            let time = getValue(row, importSalariesHeaders, 'Temps de travail');
+            let employee = '';
+            let cegid = '';
+            let month = null;
+            let salary = 0;
+            let time = null;
+
+            if (mode === 'CNA') {
+                employee = getValue(row, importSalariesHeaders, 'Nom du salarié');
+                month = getDateValue(row, importSalariesHeaders, 'Période');
+                salary = getValue(row, importSalariesHeaders, 'Coût global CNA');
+                time = getValue(row, importSalariesHeaders, 'Temps de travail');
+            } else {
+                cegid = getValue(row, importSalariesHeaders, 'Code CEGID Salarié');
+                let nom = getValue(row, importSalariesHeaders, 'Nom');
+                let prenom = getValue(row, importSalariesHeaders, 'Prénom');
+
+                employee = titleCase(prenom) + ' ' + titleCase(nom); // Collaborateur nom projets
+
+                month = getDateValue(row, importSalariesHeaders, 'Date');
+                salary = getValue(row, importSalariesHeaders, 'Cout global (attention comprends des frais déplacements)');
+                time = getValue(row, importSalariesHeaders, '%Temps travaillé');
+            }
 
             if (salary > 0 && month) {
                 let key = `${employee}-${getDateKey(month)}`;
@@ -115,7 +178,13 @@ class WorkedTime {
                 // Check if this key is still in the salaryMap, meaning it was not found in the existing salaries
                 // and should be added as a new row
                 if (salaryMap.has(key)) {
-                    let newRow = WorkedTime.getWorkedRow(employee, month, salary, time, 'A saisir !!', lastRow + newRows.length + 1);
+                    let newRow = [];
+
+                    if (mode === 'CNA') {
+                        newRow = WorkedTime.getWorkedRowCNA(employee, month, salary, time, 'A saisir !!', lastRow + newRows.length + 1);
+                    } else {
+                        newRow = WorkedTime.getWorkedRowVDT(employee, cegid, month, salary, time, 'A saisir !!', lastRow + newRows.length + 1);
+                    }
 
                     newRows.push(newRow);
                 }
@@ -289,7 +358,12 @@ class WorkedTime {
                 if (currentSalary.startDate > d)
                     continue;
 
-                let newRow = WorkedTime.getWorkedRow(employee.name, d, currentSalary.salary, currentSalary.time, currentSalary.status, lastRow + newValues.length + 1);
+                let newRow = [];
+                if (mode === 'CNA') {
+                    newRow = WorkedTime.getWorkedRowCNA(employee.name, d, currentSalary.salary, currentSalary.time, currentSalary.status, lastRow + newValues.length + 1);
+                } else {
+                    newRow = WorkedTime.getWorkedRowVDT(employee.name, cegid, d, currentSalary.salary, currentSalary.time, currentSalary.status, lastRow + newValues.length + 1);
+                }
 
                 newValues.push(newRow);
             }
@@ -302,10 +376,9 @@ class WorkedTime {
 
             SpreadsheetApp.flush();
         });
-
     }
 
-    static getWorkedRow(name, month, salary, time, status, rowIndex) {
+    static getWorkedRowCNA(name, month, salary, time, status, rowIndex) {
         let newRow = [];
 
         newRow.push(name);
@@ -323,4 +396,25 @@ class WorkedTime {
 
         return newRow;
     }
+
+    static getWorkedRowVDT(name, cegid, month, salary, time, status, rowIndex) {
+        let newRow = [];
+
+        newRow.push(name);
+        newRow.push(cegid);
+        newRow.push(name);
+        newRow.push(getMonthStringForDate(month));
+        newRow.push(salary);
+        newRow.push(time);
+        newRow.push(`=IF(F${rowIndex} = 0; 0; E${rowIndex}/F${rowIndex})`);
+        newRow.push(`=FILTER('Import salaires'!S:S;'Import salaires'!A:A=D${rowIndex}*1;'Import salaires'!B:B=B${rowIndex})`);
+        newRow.push(`=IF(D${rowIndex}<=DATE(2023;8;31); YEAR(D${rowIndex}); IF(MONTH(D${rowIndex}) <= 8; RIGHT(YEAR(D${rowIndex})-1; 2) & RIGHT(YEAR(D${rowIndex}); 2); RIGHT(YEAR(D${rowIndex}); 2) & RIGHT(YEAR(D${rowIndex})+1; 2)))`);
+        newRow.push(`=FILTER('Import salaires'!T:T;'Import salaires'!A:A=D${rowIndex}*1;'Import salaires'!B:B=B${rowIndex})`);
+        newRow.push(status);
+        newRow.push(`=FILTER('Import salaires'!Q:Q;'Import salaires'!A:A=D${rowIndex}*1;'Import salaires'!B:B=B${rowIndex})`);
+        newRow.push(`=H${rowIndex}/vlookup(D${rowIndex}; 'Jours ouvrés par mois'!A:B; 2; false)`); //  PM Effectif
+
+        return newRow;
+    }
+
 }
