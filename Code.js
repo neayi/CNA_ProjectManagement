@@ -60,7 +60,7 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
     let employees = new Map();
 
     Employee.getEmployees().forEach(employee => {
-        if (employeesNames.indexOf(employee.name) !== -1 &&
+        if (employeesNames.findIndex(item => employee.name.toLowerCase() === item.toLowerCase()) !== -1 &&
             employee.hasWorkedBetween(startDate, endDate)
             // && employee.name == "Laurence Fontaine";
         ) {
@@ -322,7 +322,8 @@ function getEndMonth(year, endDate) {
 }
 
 function getValue(row, headers, field) {
-    let index = headers.indexOf(field);
+    let index = headers.findIndex(item => field.toLowerCase() === item.toLowerCase());
+
     if (index === -1) {
         throw new Error(`Le champ '${field}' n'existe pas dans les en-têtes.`);
     }
@@ -330,7 +331,7 @@ function getValue(row, headers, field) {
 }
 
 function getDateValue(row, headers, field) {
-    let index = headers.indexOf(field);
+    let index = headers.findIndex(item => field.toLowerCase() === item.toLowerCase());
     if (index === -1) {
         throw new Error(`Le champ '${field}' n'existe pas dans les en-têtes.`);
     }

@@ -37,7 +37,7 @@ class WorkedTime {
         let headers = data.shift();
 
         let mode = 'CNA';
-        let index = headers.indexOf('N° CEGID');
+        let index = headers.findIndex(item => 'n° cegid' === item.toLowerCase());
         if (index >= 0) {
             mode = 'VER DE TERRE';
         }
@@ -64,7 +64,7 @@ class WorkedTime {
         let importSalariesHeaders = importSalariesData.shift();
 
         let mode = 'CNA';
-        let index = importSalariesHeaders.indexOf('Code CEGID Salarié');
+        let index = importSalariesHeaders.findIndex(item => 'code cegid salarié' === item.toLowerCase());
         if (index >= 0) {
             mode = 'VER DE TERRE';
         }
@@ -142,7 +142,7 @@ class WorkedTime {
         });
 
         // Update the salaries in the sheet
-        let salaryColumnIndex = salariesHeaders.indexOf('Salaire chargé réel mensuel') + 1; // +1 because getRange is 1-based
+        let salaryColumnIndex = salariesHeaders.findIndex(item => 'salaire chargé réel mensuel' === item.toLowerCase()) + 1; // +1 because getRange is 1-based
         salariesSheet.getRange(2, salaryColumnIndex, updatedSalaries.length, 1).setValues(updatedSalaries);
 
         // Now add the rows that were in "Import Salaires" but not in "Salaires collaborateurs"
@@ -217,7 +217,7 @@ class WorkedTime {
         });
 
         // Sort the sheet by month in ascending order
-        salariesSheet.sort(salariesHeaders.indexOf('Mois') + 1);
+        salariesSheet.sort(salariesHeaders.findIndex(item => 'mois' === item.toLowerCase()) + 1);
         SpreadsheetApp.flush();
 
         // Now create the future salaries based on the "Salaires à venir" sheet
@@ -246,7 +246,7 @@ class WorkedTime {
         let headers = values.shift(); // get the titles row
 
         let mode = 'CNA';
-        let index = headers.indexOf('N° salarié');
+        let index = headers.findIndex(item => 'n° salarié' === item.toLowerCase());
         if (index >= 0) {
             mode = 'VER DE TERRE';
         }
