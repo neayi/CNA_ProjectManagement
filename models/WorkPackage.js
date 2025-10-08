@@ -21,7 +21,7 @@ class WorkPackage {
       }
     });
   }
-    
+
   static getWorkPackages() {
     if (WorkPackage.allWorkPackages != undefined && WorkPackage.allWorkPackages.length > 0) {
       return WorkPackage.allWorkPackages;
@@ -44,19 +44,19 @@ class WorkPackage {
 
   static getDeclaredTimeForYear(year) {
     return DeclaredTime.getDeclaredTimes().filter(declaredTime => {
-      return declaredTime.wp === this.name && declaredTime.month.getFullYear() === year;
+      return declaredTime.wp.toLowerCase() === this.name.toLowerCase() && declaredTime.month.getFullYear() === year;
     }).reduce((total, declaredTime) => total + declaredTime.declaredTime, 0);
   }
 
   static getWorkPackagesForProject(projectName) {
     return WorkPackage.getWorkPackages().filter(workPackage => {
-      return workPackage.project === projectName;
+      return workPackage.project.toLowerCase() === projectName.toLowerCase();
     });
   }
 
   static getWorkPackageForProjectAndCode(projectName, wpCode) {
     return WorkPackage.getWorkPackages().find(workPackage => {
-      return workPackage.project === projectName && workPackage.wpCode === wpCode;
+      return workPackage.project.toLowerCase() === projectName.toLowerCase() && workPackage.wpCode.toLowerCase() === wpCode.toLowerCase();
     });
   }
 
@@ -69,7 +69,7 @@ class WorkPackage {
    */
   getRemainingBudgetedTime(year) {
     let budgetedTime = this.getBudgetedTimeForYear(year);
-    
+
     this.wpPersons.forEach(wpPerson => {
       budgetedTime -= wpPerson.budgetedTime;
     });

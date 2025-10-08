@@ -208,7 +208,9 @@ class WorkedTime {
             let month = getDateValue(row, salariesHeaders, 'Mois');
             let employee = getValue(row, salariesHeaders, 'Collaborateur');
 
-            if ((month && month > new Date()) || employee == 'A embaucher') {
+            if ((month && month > new Date()) ||
+                 employee.toLowerCase() == 'a embaucher' ||
+                 employee.toLowerCase() == 'a recruter') {
                 // If the month is in the future or the employee is "A embaucher", clear the content for this row
                 salariesSheet.getRange(rowIndex + 2, 1, 1, salariesHeaders.length).clearContent();
             }

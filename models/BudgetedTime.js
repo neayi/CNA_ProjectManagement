@@ -47,19 +47,19 @@ class BudgetedTime {
 
     getWorkPackages() {
         return WorkPackage.getWorkPackages().filter(workPackage => {
-            return workPackage.project == this.project;
+            return workPackage.project.toLowerCase() == this.project.toLowerCase();
         });
     }
 
     static getEmployeesWithBudgetedTimes(projectName) {
         return BudgetedTime.getBudgetedTimes().filter(budgetedTime => {
-            return budgetedTime.project === projectName;
+            return budgetedTime.project.toLowerCase() === projectName.toLowerCase();
         }).map(budgetedTime => budgetedTime.employee);
     }
 
     static getBudgetForWPPerson(workPackageName, year) {
         let budgetedTimes = BudgetedTime.getBudgetedTimes().filter(budgetedTime => {
-            return budgetedTime.name === workPackageName;
+            return budgetedTime.name.toLowerCase() === workPackageName.toLowerCase();
         });
 
         if (budgetedTimes.length === 0) {

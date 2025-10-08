@@ -44,7 +44,8 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
             let existingDeclaredTimes = DeclaredTime.getDeclaredTimes();
 
             for (let i = existingDeclaredTimes.length - 1; i >= 1; i--) {
-                if (isDateInRange(existingDeclaredTimes[i].month, startDate, endDate) && existingDeclaredTimes[i].project === projectName) {
+                if (isDateInRange(existingDeclaredTimes[i].month, startDate, endDate) &&
+                    existingDeclaredTimes[i].project.toLowerCase() === projectName.toLowerCase()) {
                     declaredTimesSheet.deleteRow(i + 2); // +2 because the first row is the header and the index is 0-based
                 }
             }

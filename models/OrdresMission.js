@@ -4,14 +4,14 @@
 
 class Mission {
   constructor(row, headers) {
-			
+
     this.employee = getValue(row, headers, 'Nom complet');
     this.project = getValue(row, headers, 'Nom du projet');
     this.wpCode = getValue(row, headers, 'Work package');
 
     this.dateStart = getDateValue(row, headers, 'Date de début déplacement');
     this.dateEnd = getDateValue(row, headers, 'Date de fin déplacement');
-    
+
     if (this.dateStart != null) {
       this.month = new Date(this.dateStart.getTime());
       this.month.setDate(1); // Set to the first day of the month
@@ -22,7 +22,7 @@ class Mission {
 
     this.workPackage = WorkPackage.getWorkPackageForProjectAndCode(this.project, this.wpCode);
   }
-    
+
   static getMissions() {
     if (Mission.allMissions != undefined && Mission.allMissions.length > 0) {
       return Mission.allMissions;
@@ -44,9 +44,11 @@ class Mission {
 
   static getMissionsForEmployee(employeeName, workPackageName, year) {
     return Mission.getMissions().filter(mission => {
-      return mission.employee === employeeName && 
-             mission.workPackage != null && mission.workPackage.name === workPackageName && 
-             mission.month != null && mission.month.getFullYear() === year;
+      return mission.employee.toLowerCase() === employeeName.toLowerCase() &&
+             mission.workPackage != null &&
+             mission.workPackage.name.toLowerCase() === workPackageName.toLowerCase() &&
+             mission.month != null &&
+             mission.month.getFullYear() === year;
     });
   }
 
