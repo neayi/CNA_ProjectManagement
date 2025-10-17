@@ -57,7 +57,7 @@ class Mission {
       return mission.employee.toLowerCase() === employeeName.toLowerCase() &&
              mission.workPackage != null &&
              mission.workPackage.name.toLowerCase() === workPackageName.toLowerCase() &&
-             mission.year === year;
+             mission.year == year;
     });
   }
 

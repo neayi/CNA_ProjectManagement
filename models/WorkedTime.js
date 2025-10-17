@@ -5,17 +5,13 @@ class WorkedTime {
     constructor(row, headers, mode) {
         if (mode === 'CNA') {
             this.employee = getValue(row, headers, 'Collaborateur');
-
-            this.salaryPerPM = getValue(row, headers, 'Salaire chargé 1 PM (ETP)');
-            this.year = getValue(row, headers, 'Année');
-            this.status = getValue(row, headers, 'Statut');
         } else {
             this.employee = getValue(row, headers, 'Collaborateur nom projets');
-
-            this.salaryPerPM = getValue(row, headers, 'Salaire ETP');
-            this.year = getValue(row, headers, 'Année VDT');
-            this.status = getValue(row, headers, 'Statut');
         }
+            
+        this.salaryPerPM = getValue(row, headers, 'Salaire chargé 1 PM (ETP)');
+        this.year = getValue(row, headers, 'Année');
+        this.status = getValue(row, headers, 'Statut');
 
         this.month = getDateValue(row, headers, 'Mois');
         this.salary = getValue(row, headers, 'Salaire chargé réel mensuel');
@@ -43,12 +39,6 @@ class WorkedTime {
         }
 
         WorkedTime.allWorkedTimes = data.map(row => new WorkedTime(row, headers, mode));
-
-        WorkedTime.allWorkedTimes.filter(wt => {
-            return wt.employee == "Céline Gallot";
-        }).forEach(wt => {
-            console.log("Worked time for Céline Gallot: month " + (wt.month.getMonth() + 1) + ", year " + wt.year + ", salary " + wt.salary + ", percent worked " + wt.percentWorked);
-        });
 
         return WorkedTime.allWorkedTimes;
     }

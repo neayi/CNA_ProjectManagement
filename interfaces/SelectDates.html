@@ -13,116 +13,22 @@
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jquery-ui@1.14.1/dist/jquery-ui.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/jquery-ui@1.14.1/dist/jquery-ui.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/jquery-ui@1.14.1/themes/base/theme.min.css" rel="stylesheet" />
-    <style>
-        /* Fix jQuery UI datepicker button panel when used with Bootstrap */
-        .ui-datepicker {
-            font-size: 1rem;
-            z-index: 9999 !important;
-        }
-
-        .ui-datepicker .ui-datepicker-buttonpane {
-            background: #f8f9fa;
-            border-top: 1px solid #dee2e6;
-            margin: 0;
-            padding: 0.5em 0.4em;
-        }
-
-        .ui-datepicker-calendar {
-            display: none;
-        }
-
-        .ui-datepicker .ui-datepicker-buttonpane button {
-            font-size: 0.95em;
-            padding: 0.25em 1em;
-            margin: 0 0.2em;
-            background: #e9ecef;
-            border: 1px solid #ced4da;
-            border-radius: 0.25em;
-            color: #212529;
-            cursor: pointer;
-        }
-
-        .ui-datepicker .ui-datepicker-buttonpane button:hover {
-            background: #dee2e6;
-        }
-
-        .ui-datepicker .ui-datepicker-prev span,
-        .ui-datepicker .ui-datepicker-next span {
-            display: block;
-            text-indent: -9999px;
-            /* Hide text */
-        }
-
-        .ui-datepicker .ui-datepicker-prev,
-        .ui-datepicker .ui-datepicker-next {
-            background: none !important;
-            border: none !important;
-            top: 2px;
-            margin-top: 3px;
-        }
-
-        .ui-datepicker-prev {
-            float: left;
-        }
-
-        .ui-datepicker-next {
-            float: right;
-        }
-
-        .ui-datepicker .ui-datepicker-prev:after,
-        .ui-datepicker .ui-datepicker-next:after {
-            content: "";
-        }
-
-        .ui-datepicker .ui-datepicker-prev span,
-        .ui-datepicker .ui-datepicker-next span {
-            background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' fill='gray' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolygon points='11,2 5,8 11,14'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: center;
-            width: 16px;
-            height: 16px;
-            display: block;
-        }
-
-        .ui-datepicker .ui-datepicker-next span {
-            background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' fill='gray' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolygon points='5,2 11,8 5,14'/%3E%3C/svg%3E");
-        }
-
-        /* ...existing code... */
-
-        /* ...existing code... */
-        .ui-datepicker .ui-datepicker-prev span,
-        .ui-datepicker .ui-datepicker-next span {
-            text-indent: -9999px;
-            /* Hide text, show only icon */
-        }
-
-        /* ...existing code... */
-    </style>
+    
 </head>
 
 <body>
     <div class="container mt-2 px-0" style="width: 90%">
-        <section aria-labelledby="Introduction">
-            <h5 id="Introduction">Choix des dates pour la génération des temps</h5>
-            <p class="pb-3">
-                <small>La date de fin ne peut être dans le futur. Par défaut les temps déjà déclarés entre la date de
-                    début et la date de fin seront préservés.</a>.
-                </small>
-            </p>
-        </section>
 
         <form id="myForm" aria-label="Dates selection form">
             <div class="row">
                 <div class="col mb-3">
                     <label for="startDate" class="form-label">Date de début :</label>
-                    <input type="text" id="datepickerStart" name="dateStart" class="form-control date-pickers"
+                    <input type="text" id="datepickerStart" name="dateStart" 
                         autocomplete="off" readonly="readonly" style="width: 128px; text-align: right;">
                 </div>
                 <div class="col mb-3">
                     <label for="endDate" class="form-label">Date de fin :</label>
-                    <input type="text" id="datepickerEnd" name="dateEnd" class="form-control date-pickers"
+                    <input type="text" id="datepickerEnd" name="dateEnd" 
                         autocomplete="off" readonly="readonly" style="width: 128px; text-align: right;">
                 </div>
             </div>
@@ -136,7 +42,15 @@
                     
                 </div>
             </div>
-
+            <div class="row">
+                <div class="col mb-3">
+                    <label for="reportingPeriodPicker" class="form-label">Reporting period : <span id="reporting-period-spinner" class="spinner-border spinner-border-sm text-primary ms-2" role="status"
+                        aria-hidden="true"></span></label>
+                    <select id="reportingPeriodPicker" name="reportingPeriodId" class="form-select" disabled>
+                        <option value="">Sélectionner une période de reporting...</option>
+                    </select>                    
+                </div>
+            </div>
             <div class="row">
                 <div class="col mb-3">
                     <span class="form-text" id="error-text"></span>
@@ -146,11 +60,19 @@
 
             <div class="row">
                 <div class="col-12 text-end">
-                    <button type="button" class="btn btn-primary" onclick="startGeneration()">Démarrer la génération des temps</button>
+                    <button type="button" id="submitButton" class="btn btn-primary" disabled="disabled" onclick="startGeneration()">Démarrer la génération des temps</button>
                     <button type="button" class="btn btn-secondary" onclick="cancel()">Annuler</button>
                 </div>
             </div>
         </form>
+
+        <div class="mt-5 text-center d-none" id="loading-div">
+            <div class="spinner-border text-primary" role="status" id="loading-spinner">
+                <span class="visually-hidden">Loading...</span>
+            </div> 
+            <span id="loading-text" style="top: -7px; position: relative; left: 20px;">Génération des temps en cours... veuillez patienter !</span>
+        </div>
+
     </div>
 
     <script>
@@ -179,32 +101,25 @@
                 return;
             }
 
-            google.script.run.generateTimesForDates(startDate.valueOf(), endDate.valueOf(), false, projectId);
-            google.script.host.close();
+            console.log("Generating times for project ID:", projectId, "from", startDate, "to", endDate);
+
+            google.script.run.withSuccessHandler(function () {                
+                google.script.host.close();    
+            }).generateTimesForDates(startDate.valueOf(), endDate.valueOf(), false, projectId);
+            
+            // Show a loading message
+            $("#submitButton").parent().hide();
+            $("#loading-div").removeClass("d-none");
         }
 
         function cancel() {
             google.script.host.close();
         }
 
-
         // When the page is ready, initialize the datepicker
         $(document).ready(function () {
-            // Initialize the datepicker for month/year selection only
-            $('.date-pickers').datepicker({
-                dateFormat: "mm/yy",
-                changeMonth: true,
-                changeYear: true,
-                showButtonPanel: true,
-                minDate: new Date(2020, 0, 1), // January 1, 2020
-                maxDate: new Date(),
 
-                onClose: function (dateText, inst) {
-                    var month = $("#ui-datepicker-div .ui-datepicker-month :selected").val();
-                    var year = $("#ui-datepicker-div .ui-datepicker-year :selected").val();
-                    $(this).datepicker('setDate', new Date(year, month, 1));
-                }
-            });
+            let reportingPeriods = [];
 
             // Show spinner and disable dropdown before loading
             $("#projectPicker").prop("disabled", true);
@@ -225,6 +140,53 @@
                 $picker.prop("disabled", false);
                 $("#project-spinner").hide();
             }).getProjects();
+
+            // Load projects from server
+            google.script.run.withSuccessHandler(function (rp) {
+                reportingPeriods = rp;
+                $("#reporting-period-spinner").hide();
+                $("#reportingPeriodPicker").prop("disabled", false);
+            }).getReportingPeriodsForPeriodPicker();
+
+            $('#projectPicker').on('change', function () {
+                var selectedProjectId = $(this).val();
+                var rpPicker = $("#reportingPeriodPicker");
+                rpPicker.empty();
+
+                if (selectedProjectId) {
+                    var filteredRPs = reportingPeriods.filter(function (rp) {
+                        return rp.projectId === selectedProjectId;
+                    });
+
+                    if (filteredRPs.length) {
+                        rpPicker.append($('<option>', { value: '', text: 'Sélectionnez une période de reporting...' }));
+                        filteredRPs.forEach(function (rp) {
+                            rpPicker.append($('<option>', { value: rp.id, text: rp.name }));
+                        });
+                    } else {
+                        rpPicker.append($('<option>', { value: '', text: 'Aucune période de reporting disponible' }));
+                    }
+                } else {
+                    rpPicker.append($('<option>', { value: '', text: 'Sélectionner une période de reporting...' }));
+                }
+            });
+
+            $("#reportingPeriodPicker").on('change', function () {
+                var selectedRpId = $(this).val();
+                var selectedRp = reportingPeriods.find(function (rp) {
+                    return rp.id === selectedRpId;
+                });
+
+                if (selectedRp) {
+                    var startDate = new Date(selectedRp.start);
+                    var endDate = new Date(selectedRp.end);
+
+                    $("#datepickerStart").val(startDate.getMonth() + 1 + '/' + startDate.getFullYear());
+                    $("#datepickerEnd").val(endDate.getMonth() + 1 + '/' + endDate.getFullYear());
+
+                    $("#submitButton").prop("disabled", false);
+                }
+            });
         });
     </script>
 </body>

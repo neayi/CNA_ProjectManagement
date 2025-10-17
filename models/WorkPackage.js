@@ -44,7 +44,7 @@ class WorkPackage {
 
   static getDeclaredTimeForYear(year) {
     return DeclaredTime.getDeclaredTimes().filter(declaredTime => {
-      return declaredTime.wp.toLowerCase() === this.name.toLowerCase() && declaredTime.year === year;
+      return declaredTime.wp.toLowerCase() === this.name.toLowerCase() && declaredTime.year == year;
     }).reduce((total, declaredTime) => total + declaredTime.declaredTime, 0);
   }
 
