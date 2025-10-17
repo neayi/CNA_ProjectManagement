@@ -19,7 +19,7 @@ class DeclaredTime {
       return DeclaredTime.allDeclaredTimes;
     }
 
-    let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Temps déclarés test');
+    let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Temps déclarés');
 
     if (!sheet) {
       throw new Error("La feuille 'Temps déclarés' n'existe pas dans le classeur.");

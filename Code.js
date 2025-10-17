@@ -27,7 +27,7 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
 
     Logger.log("Génération des temps déclarés pour les dates entre " + startDate + " et " + endDate + " (deleteExistingTimes = " + deleteExistingTimes + ") par " + currentUser);
 
-    let declaredTimesSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Temps déclarés test');
+    let declaredTimesSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Temps déclarés');
 
     // On garde la dernière ligne générée pour récupérer les formules calculées
     const lastGoodFormulasRowIndex = declaredTimesSheet.getLastRow(); // On pourrait améliorer en vérifiant que les formules ne sont effectivement pas vides
@@ -38,7 +38,7 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
 
     // If deleteExistingTimes is true, we will delete the existing times in the "Temps déclarés" sheet.
     if (deleteExistingTimes) {
-        let declaredTimesSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Temps déclarés test');
+        let declaredTimesSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Temps déclarés');
         if (declaredTimesSheet) {
 
             let existingDeclaredTimes = DeclaredTime.getDeclaredTimes();
