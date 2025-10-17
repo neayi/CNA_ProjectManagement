@@ -44,6 +44,12 @@ class WorkedTime {
 
         WorkedTime.allWorkedTimes = data.map(row => new WorkedTime(row, headers, mode));
 
+        WorkedTime.allWorkedTimes.filter(wt => {
+            return wt.employee == "Céline Gallot";
+        }).forEach(wt => {
+            console.log("Worked time for Céline Gallot: month " + (wt.month.getMonth() + 1) + ", year " + wt.year + ", salary " + wt.salary + ", percent worked " + wt.percentWorked);
+        });
+
         return WorkedTime.allWorkedTimes;
     }
 
@@ -225,8 +231,6 @@ class WorkedTime {
 
         SpreadsheetApp.getUi().alert("Les salaires ont été mis à jour.");
     }
-
-
 
     /**
      * Remplir pour tous les collaborateurs dans le premier tableau et pour tous les mois entre date début et un mois avant la date

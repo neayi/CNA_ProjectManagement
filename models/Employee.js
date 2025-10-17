@@ -49,22 +49,6 @@ class Employee {
         return true;
     }
 
-    getBudgetedTimesOnProjects(startDate, endDate) {
-        let budgetedTimes = BudgetedTime.getBudgetedTimes();
-
-        return budgetedTimes.filter(budgetedTime => {
-            if (budgetedTime.employee.toLowerCase() == this.name.toLowerCase()) {
-                for (let year = startDate.getFullYear(); year <= endDate.getFullYear(); year++) {
-                    if (budgetedTime.budgetedTimes.has(year.toString())) {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        });
-    }
-
     /**
      *
      * @param {*} month in human notation (1-12)
@@ -75,7 +59,7 @@ class Employee {
         let workedTime = WorkedTime.getWorkedTimes().filter(workedTime => {
             return workedTime.employee.toLowerCase() === this.name.toLowerCase() &&
                    workedTime.month.getMonth() === (month - 1) &&
-                   workedTime.month.getFullYear() === year;
+                   workedTime.year === year;
         }).at(0);
 
         if (workedTime !== undefined) {
@@ -88,7 +72,7 @@ class Employee {
     getDeclaredTimeForYearAndProject(year, project) {
         return DeclaredTime.getDeclaredTimes().filter(declaredTime => {
             return declaredTime.employee.toLowerCase() === this.name.toLowerCase() &&
-                   declaredTime.month.getFullYear() === year &&
+                   declaredTime.year === year &&
                    declaredTime.project.toLowerCase() === project.toLowerCase();
         }).reduce((total, declaredTime) => total + declaredTime.declaredTime, 0);
     }
@@ -96,7 +80,7 @@ class Employee {
     getDeclaredTimeForYearAndWorkPackage(year, workPackage) {
         return DeclaredTime.getDeclaredTimes().filter(declaredTime => {
             return declaredTime.employee.toLowerCase() === this.name.toLowerCase() &&
-                   declaredTime.month.getFullYear() === year &&
+                   declaredTime.year === year &&
                    declaredTime.wp.toLowerCase() === workPackage.toLowerCase();
         }).reduce((total, declaredTime) => total + declaredTime.declaredTime, 0);
     }
@@ -111,7 +95,7 @@ class Employee {
         return DeclaredTime.getDeclaredTimes().filter(declaredTime => {
             return declaredTime.employee.toLowerCase() === this.name.toLowerCase() &&
                 declaredTime.month.getMonth() === (month - 1) &&
-                declaredTime.month.getFullYear() === year;
+                declaredTime.year === year;
         }).reduce((total, declaredTime) => total + declaredTime.declaredTime, 0);
     }
 

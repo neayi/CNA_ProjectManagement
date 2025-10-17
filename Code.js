@@ -27,7 +27,7 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
 
     Logger.log("Génération des temps déclarés pour les dates entre " + startDate + " et " + endDate + " (deleteExistingTimes = " + deleteExistingTimes + ") par " + currentUser);
 
-    let declaredTimesSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Temps déclarés');
+    let declaredTimesSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Temps déclarés test');
 
     // On garde la dernière ligne générée pour récupérer les formules calculées
     const lastGoodFormulasRowIndex = declaredTimesSheet.getLastRow(); // On pourrait améliorer en vérifiant que les formules ne sont effectivement pas vides
@@ -38,7 +38,7 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
 
     // If deleteExistingTimes is true, we will delete the existing times in the "Temps déclarés" sheet.
     if (deleteExistingTimes) {
-        let declaredTimesSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Temps déclarés');
+        let declaredTimesSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Temps déclarés test');
         if (declaredTimesSheet) {
 
             let existingDeclaredTimes = DeclaredTime.getDeclaredTimes();
@@ -76,11 +76,10 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
     Logger.log("Found " + employees.size + " employees who have worked between " + startDate + " and " + endDate);
     Logger.log([...employees]);
 
-    const startYear = startDate.getFullYear();
-    const endYear = endDate.getFullYear();
-    for (let year = startYear; year <= endYear; year++) {
-        // On travaille année par année.
-       flushSpreadsheetAndCache();
+    BudgetedTime.getYears().filter(year => isDateInRange(startDate, endDate, year)).forEach(year => {
+
+        // On travaille année par année. 
+        flushSpreadsheetAndCache();
 
         // On créé une matrice d'objets WorkPackage/employee qui contiendra les temps déclarés pour chaque work package et chaque employé.
         let wpPersons = new Map();
@@ -194,8 +193,10 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
 
                 let WPYearlyMissingTime = wpPerson.budgetedTime - employee.getDeclaredTimeForYearAndWorkPackage(year, workPackage.name);
 
-                if (WPYearlyMissingTime <= 0)
+                if (WPYearlyMissingTime <= 0) {
+                    console.log("Skipping " + employee.name + " on " + workPackage.name + " for year " + year + " because no missing time. Declared time for year and work package: " + employee.getDeclaredTimeForYearAndWorkPackage(year, workPackage.name));
                     return; // Si le temps déclaré est déjà supérieur ou égal au temps prévu, on ne fait rien
+                }
 
                 let rows = [];
 
@@ -216,17 +217,19 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
                     months.add(m);
                 }
 
-                console.log(Array.from(months));
-
                 for (const m of months) {
                     let workedTime = employee.getWorkedTime(m, year); // Temps travaillé par le salarié
                     let declaredTimeForMonth = employee.getDeclaredTimeForMonth(m, year); // temps déjà déclaré pour ce mois
                     let remainingTimeForMonth = workedTime - declaredTimeForMonth; // Temps restant à déclarer pour ce mois
 
-                    if (remainingTimeForMonth <= 0)
+                    if (remainingTimeForMonth <= 0) {
+                        console.log("Skipping " + employee.name + " for month " + m + " of year " + year + " because no remaining time. Worked time: " + workedTime + ", already declared time: " + declaredTimeForMonth);
                         continue; // Si le temps travaillé est inférieur ou égal au temps déjà déclaré, on ne fait rien
+                    }
 
                     let newDeclaredTime = Math.min(WPYearlyMissingTime, remainingTimeForMonth); // On ne peut pas déclarer plus que le temps travaillé moins le temps déjà déclaré
+
+                    console.log("Declaring time for " + employee.name + " for month " + m + ", declared time for month: " + newDeclaredTime);
 
                     rows.push([
                         workPackage.name,
@@ -279,21 +282,32 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
                 }
             });
         });
-    }    // For each year
+    });    // For each year
 
     SpreadsheetApp.getUi().alert("Les temps ont été générés.");
 }
 
 function debugLog(employees, workPackages, wpPersons, projectName, year) {
 
-    let row = ["Tps travaillé"];
+    let row = ["Tps travaillé".padEnd(25, " ")];
     workPackages.forEach(workPackage => {
-        row.push(workPackage.name);
+        
+        let name = workPackage.name;
+
+        let wp = name.match(/wp[^ ]+/i);
+        if (wp) {
+            name = wp[0];
+        }
+
+        row.push(name);
     });
+
+    row.push(' for year ' + year);
+
     console.log(row.join("\t"));
 
     employees.forEach(employee => {
-        let row = [employee.name];
+        let row = [employee.name.padEnd(25, ".")];
 
         workPackages.forEach(workPackage => {
             let wpPerson = wpPersons.get(DeclaredTimePerPerson.makeKey(employee.name, workPackage.name, projectName, year));
@@ -313,11 +327,63 @@ function debugLog(employees, workPackages, wpPersons, projectName, year) {
 }
 
 // utilities
+
+
+/**
+ * Takes a year (in both format 2023 or 2334) and a date. If the year matches the year of the date, returns the month of the date (1-12). Otherwise returns 1.
+ * For dates that are in the format 2324, in order to return the month of startDate, it must be between September of the first year and August of the next year.
+ * 
+ * @param {*} year 
+ * @param {*} startDate 
+ * @returns Integer between 1 and 12
+ */
 function getStartMonth(year, startDate) {
+    if (year > 2300) {
+        // year is in the format 2324
+        year = 2000 + (year % 100) - 1;
+
+        if (startDate.getMonth() + 1 >= 9) { // if startDate is in September or later, it belongs to the first year
+            if (year === startDate.getFullYear())
+                return startDate.getMonth() + 1;
+            else
+                return 1;
+        } else { // if startDate is before September, it belongs to the second year
+            if (year + 1 === startDate.getFullYear())
+                return startDate.getMonth() + 1;
+            else
+                return 1;
+        }
+    }
+
     return (year === startDate.getFullYear()) ? startDate.getMonth() + 1 : 1; // Months are 0-indexed in JavaScript
 }
 
+/**
+ * Takes a year (in both format 2023 or 2334) and a date. If the year matches the year of the date, returns the month of the date (1-12). Otherwise returns 12.
+ * For dates that are in the format 2324, in order to return the month of startDate, it must be between September of the first year and August of the next year.
+ * 
+ * @param {*} year 
+ * @param {*} startDate 
+ * @returns Integer between 1 and 12
+ */
 function getEndMonth(year, endDate) {
+    if (year > 2300) {
+        // year is in the format 2324
+        year = 2000 + (year % 100) - 1;
+
+        if (endDate.getMonth() + 1 >= 9) { // if endDate is in September or later, it belongs to the first year
+            if (year === endDate.getFullYear())
+                return endDate.getMonth() + 1;
+            else
+                return 12;
+        } else { // if endDate is before September, it belongs to the second year
+            if (year + 1 === endDate.getFullYear())
+                return endDate.getMonth() + 1;
+            else
+                return 12;
+        }
+    }
+
     return (year === endDate.getFullYear()) ? endDate.getMonth() + 1 : 12; // Months are 0-indexed in JavaScript
 }
 
@@ -335,7 +401,26 @@ function getDateValue(row, headers, field) {
     if (index === -1) {
         throw new Error(`Le champ '${field}' n'existe pas dans les en-têtes.`);
     }
-    return row[index] == '' ? null : new Date(row[index]);
+    
+    let date = row[index] == '' ? null : new Date(row[index]);
+
+    // if the date is not null but invalid, try to parse it from a string in dd/mm/yyyy format
+    if (date != null && isNaN(date.getTime())) {
+        let parts = row[index].split('/');
+        if (parts.length === 3) {
+            let day = parseInt(parts[0], 10);
+            let month = parseInt(parts[1], 10) - 1; // Months are 0-based in JS
+            let year = parseInt(parts[2], 10);
+            if (year < 100) { // If year is in yy format, convert to yyyy
+                year += 2000;
+            }
+            date = new Date(year, month, day);
+        } else {
+            date = null; // If we can't parse it, set it to null
+        }
+    }
+
+    return date;
 }
 
 function titleCase(str) {
@@ -376,7 +461,6 @@ function isDateInRange(date, startDate, endDate) {
     return date >= startDate && date <= endDate;
 }
 
-
 /**
  * Fill the "Temps déclarés" sheet with rows that match the work packages and the people who worked on them.
  */
@@ -391,7 +475,6 @@ function UpdateEmployeeSalaries() {
 function ConfirmUpdateEmployeeSalaries() {
     WorkedTime.UpdateEmployeeSalaries();
 }
-
 
 function getDateKey(date) {
     return date.getMonth() + '-' + date.getFullYear();
@@ -416,12 +499,25 @@ function getProjects() {
 }
 
 function getCurrentUser() {
-  const email = Session.getActiveUser().getEmail();
-  if (!email) return "Utilisateur inconnu";
+    const email = Session.getActiveUser().getEmail();
+    if (!email) return "Utilisateur inconnu";
 
-  const localPart = email.split("@")[0]; // avant le @
-  const parts = localPart.split(".");
-  const firstName = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+    const localPart = email.split("@")[0]; // avant le @
+    const parts = localPart.split(".");
+    const firstName = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
 
-  return firstName;
+    return firstName;
+}
+
+function isDateInRange(startDate, endDate, year) {
+    let minYear = year;
+    let maxYear = year;
+    
+    if (year > 2300) {
+        // year is in the format 2324
+        minYear = 2000 + (year % 100) - 1;
+        maxYear = minYear + 1;
+    }
+
+    return startDate.getFullYear() <= maxYear && minYear <= endDate.getFullYear();
 }

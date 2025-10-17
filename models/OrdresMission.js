@@ -12,12 +12,22 @@ class Mission {
     this.dateStart = getDateValue(row, headers, 'Date de début déplacement');
     this.dateEnd = getDateValue(row, headers, 'Date de fin déplacement');
 
+    // Calculate the year in the format 2324
     if (this.dateStart != null) {
-      this.month = new Date(this.dateStart.getTime());
-      this.month.setDate(1); // Set to the first day of the month
-    }
-    else {
-      this.month = null; // If dateStart is null, set month to null
+      let year = this.dateStart.getFullYear();
+      let month = this.dateStart.getMonth() + 1; // getMonth() is zero-based
+
+      if (year < 2023 || (year === 2023 && month <= 8)) {
+        this.year = year.toString();
+      } else {
+        if (month <= 8) {
+          this.year = (year - 1).toString().slice(-2) + year.toString().slice(-2);
+        } else {
+          this.year = year.toString().slice(-2) + (year + 1).toString().slice(-2);
+        }
+      }
+    } else {
+      this.year = null; // If dateStart is null, set year to null
     }
 
     this.workPackage = WorkPackage.getWorkPackageForProjectAndCode(this.project, this.wpCode);
@@ -47,8 +57,7 @@ class Mission {
       return mission.employee.toLowerCase() === employeeName.toLowerCase() &&
              mission.workPackage != null &&
              mission.workPackage.name.toLowerCase() === workPackageName.toLowerCase() &&
-             mission.month != null &&
-             mission.month.getFullYear() === year;
+             mission.year === year;
     });
   }
 

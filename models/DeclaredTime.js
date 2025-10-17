@@ -7,7 +7,8 @@ class DeclaredTime {
 
     this.wp = getValue(row, headers, 'Work package');
     this.employee = getValue(row, headers, 'Collaborateur');
-    this.month = getValue(row, headers, 'Mois');
+    this.month = getDateValue(row, headers, 'Mois');
+    this.year = getValue(row, headers, 'Année');
     this.declaredTime = getValue(row, headers, 'Temps (PM)');
     this.project = getValue(row, headers, 'Projet');
   }
@@ -18,7 +19,7 @@ class DeclaredTime {
       return DeclaredTime.allDeclaredTimes;
     }
 
-    let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Temps déclarés');
+    let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Temps déclarés test');
 
     if (!sheet) {
       throw new Error("La feuille 'Temps déclarés' n'existe pas dans le classeur.");

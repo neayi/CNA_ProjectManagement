@@ -36,11 +36,20 @@ class BudgetedTime {
         data.shift(); // helper comments
         let headers = data.shift();
 
+        BudgetedTime.years = headers.filter(header => header.match(/P[0-9]+/)).map(header => header.substring(1));
+
         BudgetedTime.allBudgetedTimes = data.map(row => new BudgetedTime(row, headers));
 
         return BudgetedTime.allBudgetedTimes;
     }
 
+    static getYears() {
+        if (BudgetedTime.years == undefined) {
+            BudgetedTime.getBudgetedTimes(); // This will populate the years
+        }
+        return BudgetedTime.years;
+    }
+    
     getBudgetedTimeForYear(year) {
         return this.budgetedTimes.get(year.toString()) || 0; // Return 0 if no budgeted time for the year
     }

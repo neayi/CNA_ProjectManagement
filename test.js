@@ -41,8 +41,6 @@ function UnitTest() {
         return employee.name == "Martin Rollet";
     }).at(0);
 
-    let budgetedProjects = martin.getBudgetedTimesOnProjects(startDate, endDate);
-
     let declaredTimesForMartinIn2024 = martin.getDeclaredTimeForYear(2024); // 2.2
     let declaredTimesForMartinInJanuary2024 = martin.getDeclaredTimeForMonth(0, 2024); // 0.2
     let workedTimeForMartin = martin.getWorkedTime(0, 2025); // January 2025 : 0.5
