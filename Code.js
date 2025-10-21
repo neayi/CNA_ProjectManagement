@@ -15,7 +15,7 @@ function CreateDeclaredTimes() {
         .setWidth(500)
         .setHeight(550);
 
-    SpreadsheetApp.getUi().showModalDialog(html, 'Choisir les dates de début et de fin');
+    SpreadsheetApp.getUi().showModalDialog(html, 'Choix de la période de reporting');
 }
 
 function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectName) {
@@ -205,7 +205,7 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
                 // Commencer par identifier les ordres de mission pour ce salarié sur ce projet dans cette année
                 let missions = Mission.getMissionsForEmployee(employee.name, workPackage.name, yearString);
                 missions.forEach(mission => {
-                    const m = mission.month.getMonth() + 1;
+                    const m = mission.dateStart.getMonth() + 1;
 
                     if (m >= getStartMonth(yearString, startDate) && m <= getEndMonth(yearString, endDate)) {
                         months.add(m);
