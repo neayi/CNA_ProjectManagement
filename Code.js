@@ -34,7 +34,7 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
 
     // On copie les formules calculées pour les utiliser plus tard au moment de générer de nouvelles lignes
     let formulasFJ = declaredTimesSheet.getRange(lastGoodFormulasRowIndex, 6, 1, 5).getFormulasR1C1();
-    let formulasLU = declaredTimesSheet.getRange(lastGoodFormulasRowIndex, 12, 1, 10).getFormulasR1C1();
+    let formulasLW = declaredTimesSheet.getRange(lastGoodFormulasRowIndex, 12, 1, 12).getFormulasR1C1();
 
     // If deleteExistingTimes is true, we will delete the existing times in the "Temps déclarés" sheet.
     if (deleteExistingTimes) {
@@ -224,10 +224,17 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
                         continue;
                     }
 
-                    let workedTime = employee.getWorkedTime(m, yearString); // Temps travaillé par le salarié
+                    // Pour chaque mois, on prend le temps travaillé (feuille de salaires), et on essaie d'enlever le temps qui est soit déjà déclaré,
+                    // soit qui est sur des ordres de mission pour d'autres projets.
+
+                    let workPackagesAlreadyDeclaredForMonth = employee.getDeclaredWorkPackagesForMonth(m, yearString);
+                    workPackagesAlreadyDeclaredForMonth.push(workPackage.name); // On ajoute le work package courant pour éviter de compter son temps
+
+                    let workedTime = employee.getWorkedTimeExcludingOtherMissions(workPackagesAlreadyDeclaredForMonth, m, year, yearString);
+
                     let declaredTimeForMonth = employee.getDeclaredTimeForMonth(m, yearString); // temps déjà déclaré pour ce mois
                     let remainingTimeForMonth = workedTime - declaredTimeForMonth; // Temps restant à déclarer pour ce mois
-
+ 
                     if (remainingTimeForMonth <= 0) {
                         console.log("Skipping " + employee.name + " for month " + m + " of year " + yearString + " because no remaining time. Worked time: " + debugRound(workedTime) + ", already declared time: " + debugRound(declaredTimeForMonth));
                         continue; // Si le temps travaillé est inférieur ou égal au temps déjà déclaré, on ne fait rien
@@ -259,6 +266,8 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
                         '', // Temps travaillé en heure sur la période sur  tous les projets
                         '', // Daily rate
                         '', // Coût
+                        '', // Total salaire période ou moyenne si interreg
+                        '', // Total FTE
                         currentDate, // Date de génération
                         currentUser  // Acteur de la génération
                     ]);
@@ -279,7 +288,7 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
 
                     rows.forEach((row, index) => {
                         declaredTimesSheet.getRange(newRowIndex + index, 6, 1, 5).setFormulasR1C1(formulasFJ);
-                        declaredTimesSheet.getRange(newRowIndex + index, 12, 1, 10).setFormulasR1C1(formulasLU);
+                        declaredTimesSheet.getRange(newRowIndex + index, 12, 1, 12).setFormulasR1C1(formulasLW);
                     });
 
                     // Flush the changes to the sheet
@@ -535,8 +544,8 @@ function getReportingPeriodsForPeriodPicker() {
         id: 'rp' + (id++),
         projectId: period.project,
         name: period.name,
-        start: period.start.valueOf(),
-        end: period.end.valueOf()
+        start: period.start?.valueOf(),
+        end: period.end?.valueOf()
     }));
 
     return ret;

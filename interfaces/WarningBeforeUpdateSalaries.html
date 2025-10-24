@@ -17,7 +17,15 @@
 <body>
     <div class="container mt-2 px-0" style="width: 90%">
         <section aria-labelledby="Introduction">
-            <p class="">
+            
+            <div class="mt-5 text-center d-none" id="loading-div">
+                <div class="spinner-border text-primary" role="status" id="loading-spinner">
+                    <span class="visually-hidden">Loading...</span>
+                </div> 
+                <span id="loading-text" style="top: -7px; position: relative; left: 20px;">Génération des salaires en cours... veuillez patienter !</span>
+            </div>
+            
+            <p class="hideDuringLoading">
                 <i>Ce code met à jour automatiquement les salaires mensuels dans l’onglet “Salaires collaborateurs” à
                 partir des données importées du “<a
                     href="https://docs.google.com/spreadsheets/d/1bVozMLfTeqjqixc2y8-3okfo9ijJUMQuQ1ZAn6juClc/edit?gid=9740269"
@@ -51,7 +59,8 @@
             </p>
         </section>
 
-        <div class="row">
+
+        <div class="row hideDuringLoading">
             <div class="col-12 text-end">
                 <button type="button" class="btn btn-primary" onclick="startGeneration()">Démarrer la génération des
                     lignes de salaires</button>
@@ -63,11 +72,15 @@
     <script>
         function startGeneration() {
 
-            // Call the server-side function to generate times        
-            google.script.run.ConfirmUpdateEmployeeSalaries();
+            // Show a loading message
+            $(".hideDuringLoading").hide();
+            $("#loading-div").removeClass("d-none");
 
-            console.log("Closing the dialog");
-            google.script.host.close();
+            // Call the server-side function to generate times
+            google.script.run.withSuccessHandler(function () {
+                console.log("Closing the dialog");
+                google.script.host.close();
+            }).ConfirmUpdateEmployeeSalaries();
         }
 
         function cancel() {

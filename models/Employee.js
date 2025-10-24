@@ -99,6 +99,17 @@ class Employee {
         }).reduce((total, declaredTime) => total + declaredTime.declaredTime, 0);
     }
 
+    getDeclaredWorkPackagesForMonth(month, year) {
+        let workPackages = DeclaredTime.getDeclaredTimes().filter(declaredTime => {
+            return declaredTime.employee.toLowerCase() === this.name.toLowerCase() &&
+                declaredTime.month.getMonth() === (month - 1) &&
+                declaredTime.year == year;
+        }).map(declaredTime => declaredTime.wp);
+
+        // Return unique work packages
+        return [...new Set(workPackages)];
+    }
+
     /**
      * Returns the budgeted time for this work package for the current year and substract the times already accounted for by each WP
      */
@@ -121,5 +132,49 @@ class Employee {
 
         return this.getRemainingBudgetedTime() / remainingWPCount;
     }
+
+    /**
+     * Pour un wp, un mois et une année données, retourner le temps qui est travaillé par ce collaborateur quand on exclut les temps passés
+     * sur les ordres de missions pour les autres projets.
+     */
+    getWorkedTimeExcludingOtherMissions(workPackageNames, month, year, yearString) {
+        // Get the man month worked time
+        let totalWorkedTime = this.getWorkedTime(month, yearString);
+
+        let firstDayOfMonth = new Date(year, month - 1, 1);
+        let lastDayOfMonth = new Date(year, month, 0);
+
+        workPackageNames = workPackageNames.map(name => name.toLowerCase());
+
+        // Subtract the time spent on missions for other work packages
+        let employeeName = this.name;
+
+        // Calculate the number of days spent on missions for other work packages
+        let missionDays = Mission.getMissions().filter(mission => {
+            let workPackageName = mission.workPackage ? mission.workPackage.name.toLowerCase() : null;
+
+            return mission.employee.toLowerCase() === employeeName.toLowerCase() &&
+                   (workPackageName === null || workPackageNames.indexOf(workPackageName) === -1); // Exclude the mission if it is in the list of work packages
+
+            }).reduce((total, mission) => {
+
+            // if the mission starts or ends within the given month and year, we calculate the proportion of time spent
+            let overlapStart = Math.max(mission.dateStart, firstDayOfMonth);
+            let overlapEnd = Math.min(mission.dateEnd, lastDayOfMonth);
+
+            if (overlapEnd < overlapStart)
+                return total; // No overlap
+
+            let missionDurationInDays = Math.ceil((overlapEnd - overlapStart) / (1000 * 60 * 60 * 24)) + 1;
+            return total + missionDurationInDays;
+        }, 0);
+
+        // Convert missionDays in monthly time (assuming 22 working days in a month)
+        let missionTime = (missionDays / 22);
+
+        // Subtract the mission time from the total worked time, and only return a minimum of 0
+        return Math.max(totalWorkedTime - missionTime, 0);
+    }
+
 }
 
