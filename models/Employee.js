@@ -63,7 +63,7 @@ class Employee {
         }).at(0);
 
         if (workedTime !== undefined) {
-            return workedTime.percentWorked || 0;
+            return workedTime.percentWorked1825 || 0;
         }
 
         return 0;

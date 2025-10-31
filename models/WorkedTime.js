@@ -16,6 +16,8 @@ class WorkedTime {
         this.month = getDateValue(row, headers, 'Mois');
         this.salary = getValue(row, headers, 'Salaire chargé réel mensuel');
         this.percentWorked = getValue(row, headers, 'PM Effectif');
+
+        this.percentWorked1825 = getValue(row, headers, 'Nb de jours de présence') / 18.25;
     }
 
     static getWorkedTimes() {
