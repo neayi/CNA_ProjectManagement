@@ -50,7 +50,8 @@ class Employee {
     }
 
     /**
-     *
+     * Get the man month worked time
+     * 
      * @param {*} month in human notation (1-12)
      * @param {*} year
      * @returns

@@ -17,7 +17,10 @@ class WorkedTime {
         this.salary = getValue(row, headers, 'Salaire chargé réel mensuel');
         this.percentWorked = getValue(row, headers, 'PM Effectif');
 
-        this.percentWorked1825 = getValue(row, headers, 'Nb de jours de présence') / 18.25;
+        this.rtt = getValue(row, headers, 'RTT');
+        this.workDays = getValue(row, headers, "Nb jours moyen à l'année travaillés");
+
+        this.percentWorked1825 = getValue(row, headers, 'Nb de jours de présence') / this.workDays;
     }
 
     static getWorkedTimes() {
@@ -135,6 +138,7 @@ class WorkedTime {
                 // Remove the key from the map to avoid duplicates
                 salaryMap.delete(key);
             } else {
+                // No update, keep the existing salary
                 updatedSalaries.push([getValue(row, salariesHeaders, 'Salaire chargé réel mensuel')]);
             }
         });
@@ -169,7 +173,7 @@ class WorkedTime {
                 salary = getValue(row, importSalariesHeaders, 'Cout global (attention comprends des frais déplacements)');
                 time = getValue(row, importSalariesHeaders, '%Temps travaillé');
             }
-
+        
             if (salary > 0 && month) {
                 let key = `${employee}-${getDateKey(month)}`;
 
@@ -179,9 +183,9 @@ class WorkedTime {
                     let newRow = [];
 
                     if (mode === 'CNA') {
-                        newRow = WorkedTime.getWorkedRowCNA(employee, month, salary, time, 'A saisir !!', lastRow + newRows.length + 1);
+                        newRow = WorkedTime.createSpreadsheetRowCNA(employee, month, salary, time, 'A saisir !!', 'RTT A saisir !!', 0, lastRow + newRows.length + 1);
                     } else {
-                        newRow = WorkedTime.getWorkedRowVDT(employee, cegid, month, salary, time, 'A saisir !!', lastRow + newRows.length + 1);
+                        newRow = WorkedTime.createSpreadsheetRowVDT(employee, cegid, month, salary, time, 'A saisir !!', 'RTT A saisir !!', 0, lastRow + newRows.length + 1);
                     }
 
                     newRows.push(newRow);
@@ -262,6 +266,8 @@ class WorkedTime {
             salaryRow.endDate = getDateValue(row, headers, "Date fin");
             salaryRow.salary = getValue(row, headers, "Salaire réel");
             salaryRow.time = getValue(row, headers, "Temps de travail");
+            salaryRow.rtt = getValue(row, headers, "RTT");
+            salaryRow.workDays = getValue(row, headers, "Nb jours travaillés par mois");
             salaryRow.status = getValue(row, headers, "Statut");
 
             employeeData.salaries.set(getDateKey(salaryRow.startDate), salaryRow);
@@ -273,6 +279,8 @@ class WorkedTime {
             changedSalaryRow.startDate = getDateValue(row, headers, "Date nouveau salaire");
             changedSalaryRow.salary = getValue(row, headers, "Nouveau salaire");
             changedSalaryRow.time = getValue(row, headers, "Nouveau temps de travail");
+            changedSalaryRow.rtt = salaryRow.rtt;
+            changedSalaryRow.workDays = salaryRow.workDays;
             changedSalaryRow.status = salaryRow.status;
 
             if (!changedSalaryRow.time)
@@ -371,9 +379,9 @@ class WorkedTime {
 
                 let newRow = [];
                 if (mode === 'CNA') {
-                    newRow = WorkedTime.getWorkedRowCNA(employee.name, d, currentSalary.salary, currentSalary.time, currentSalary.status, lastRow + newValues.length + 1);
+                    newRow = WorkedTime.createSpreadsheetRowCNA(employee.name, d, currentSalary.salary, currentSalary.time, currentSalary.status, currentSalary.rtt, currentSalary.workDays, lastRow + newValues.length + 1);
                 } else {
-                    newRow = WorkedTime.getWorkedRowVDT(employee.name, employee.cegid, d, currentSalary.salary, currentSalary.time, currentSalary.status, lastRow + newValues.length + 1);
+                    newRow = WorkedTime.createSpreadsheetRowVDT(employee.name, employee.cegid, d, currentSalary.salary, currentSalary.time, currentSalary.status, currentSalary.rtt, currentSalary.workDays, lastRow + newValues.length + 1);
                 }
 
                 newValues.push(newRow);
@@ -389,7 +397,7 @@ class WorkedTime {
         });
     }
 
-    static getWorkedRowCNA(name, month, salary, time, status, rowIndex) {
+    static createSpreadsheetRowCNA(name, month, salary, time, status, rtt, workDays, rowIndex) {
         let newRow = [];
 
         newRow.push(name);
@@ -399,16 +407,19 @@ class WorkedTime {
         newRow.push(`=C${rowIndex}/D${rowIndex}`);
         newRow.push(`=year(B${rowIndex})`);
         newRow.push(status);
-        newRow.push(`=sumifs('Import Salaires'!K:K; 'Import Salaires'!C:C; A${rowIndex}; 'Import Salaires'!A:A; B${rowIndex})`);
-        newRow.push(`=(vlookup(B${rowIndex}; 'Import Salaires'!M:N; 2; false) - H${rowIndex}) * D${rowIndex}`);
-        newRow.push(`=I${rowIndex}/vlookup(B${rowIndex}; 'Import Salaires'!M:N; 2; false)`);
-        newRow.push(`=sumifs('Import Salaires'!F:F; 'Import Salaires'!C:C; A${rowIndex}; 'Import Salaires'!A:A; B${rowIndex})`);
-        newRow.push(`=sumifs('Import Salaires'!H:H; 'Import Salaires'!C:C; A${rowIndex}; 'Import Salaires'!A:A; B${rowIndex})`);
+        newRow.push(`=sumifs('Import Salaires'!K:K; 'Import Salaires'!C:C; A${rowIndex}; 'Import Salaires'!A:A; B${rowIndex})`); // Jours d'absence (RTT, Vacances, Maladies)
+        newRow.push(`=(vlookup(B${rowIndex}; 'Import Salaires'!M:N; 2; false) - H${rowIndex}) * D${rowIndex}`); // Nb de jours de présence
+        newRow.push(`=I${rowIndex}/vlookup(B${rowIndex}; 'Import Salaires'!M:N; 2; false)`); // PM Effectif
+        newRow.push(`=sumifs('Import Salaires'!F:F; 'Import Salaires'!C:C; A${rowIndex}; 'Import Salaires'!A:A; B${rowIndex})`); // Salaire effectif
+        newRow.push(`=sumifs('Import Salaires'!H:H; 'Import Salaires'!C:C; A${rowIndex}; 'Import Salaires'!A:A; B${rowIndex})`); // Temps effectif
+
+        newRow.push(rtt); // RTT
+        newRow.push(`=(filter('Import Salaires'!$T$2:$T;'Import Salaires'!$R$2:$R=F${rowIndex})-25-M${rowIndex})/12`); // Nb jours moyen à l'année travaillés
 
         return newRow;
     }
 
-    static getWorkedRowVDT(name, cegid, month, salary, time, status, rowIndex) {
+    static createSpreadsheetRowVDT(name, cegid, month, salary, time, status, rtt, workDays, rowIndex) {
         let newRow = [];
 
         newRow.push(titleCase(name));
@@ -424,6 +435,9 @@ class WorkedTime {
         newRow.push(status);
         newRow.push(`=FILTER('Import salaires'!Q:Q;'Import salaires'!A:A=D${rowIndex}*1;'Import salaires'!B:B=B${rowIndex})`);
         newRow.push(`=H${rowIndex}/vlookup(D${rowIndex}; 'Jours ouvrés par mois'!A:B; 2; false)`); //  PM Effectif
+        
+        newRow.push(rtt); // RTT
+        newRow.push(`=(filter('Import Salaires'!$T$2:$T;'Import Salaires'!$R$2:$R=F${rowIndex})-25-M${rowIndex})/12`); // Nb jours moyen à l'année travaillés
 
         return newRow;
     }
