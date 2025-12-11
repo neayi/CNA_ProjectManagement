@@ -227,6 +227,10 @@ class WorkedTime {
         // Now create the future salaries based on the "Salaires à venir" sheet
         WorkedTime.processFutureSalaries(debutDuMois);
 
+        // Sort the sheet by month in ascending order
+        salariesSheet.sort(salariesHeaders.findIndex(item => 'mois' === item.toLowerCase()) + 1);
+        SpreadsheetApp.flush();
+
         SpreadsheetApp.getUi().alert("Les salaires ont été mis à jour.");
     }
 
@@ -411,9 +415,8 @@ class WorkedTime {
         if (isFuture) {
             newRow.push('');
             newRow.push('');
-            newRow.push(`=I${rowIndex}/N${rowIndex}`); // PM Effectif
+            newRow.push(`=D${rowIndex}`); // PM Effectif
             
-            newRow.push('');
             newRow.push('');
         } else {
             newRow.push(`=sumifs('Import Salaires'!K:K; 'Import Salaires'!C:C; A${rowIndex}; 'Import Salaires'!A:A; B${rowIndex})`); // Jours d'absence (RTT, Vacances, Maladies)
@@ -421,11 +424,10 @@ class WorkedTime {
             newRow.push(`=I${rowIndex}/N${rowIndex}`); // PM Effectif
             
             newRow.push(`=sumifs('Import Salaires'!F:F; 'Import Salaires'!C:C; A${rowIndex}; 'Import Salaires'!A:A; B${rowIndex})`); // Salaire effectif
-            newRow.push(`=sumifs('Import Salaires'!H:H; 'Import Salaires'!C:C; A${rowIndex}; 'Import Salaires'!A:A; B${rowIndex})`); // Temps effectif
         }
 
         newRow.push(rtt); // RTT
-        newRow.push(`=(filter('Import Salaires'!$T$2:$T;'Import Salaires'!$R$2:$R=F${rowIndex})-25-M${rowIndex})/12`); // Nb jours moyen à l'année travaillés
+        newRow.push(`=(filter('Import Salaires'!$T$2:$T;'Import Salaires'!$R$2:$R=F${rowIndex})-25-L${rowIndex})/12`); // Nb jours moyen à l'année travaillés
 
         return newRow;
     }
@@ -447,7 +449,7 @@ class WorkedTime {
             newRow.push('');
             newRow.push(status);
             newRow.push('');
-            newRow.push(`=H${rowIndex}/R${rowIndex}`); //  PM Effectif
+            newRow.push(`=F${rowIndex}`); //  PM Effectif
             
         } else {
             newRow.push(`=FILTER('Import salaires'!S:S;'Import salaires'!A:A=D${rowIndex}*1;'Import salaires'!B:B=B${rowIndex})`);
@@ -459,7 +461,7 @@ class WorkedTime {
         }
 
         newRow.push(rtt); // RTT
-        newRow.push(`=(filter('Import Salaires'!$T$2:$T;'Import Salaires'!$R$2:$R=F${rowIndex})-25-M${rowIndex})/12`); // Nb jours moyen à l'année travaillés
+        newRow.push(`=(filter('Import Salaires'!$T$2:$T;'Import Salaires'!$R$2:$R=F${rowIndex})-25-L${rowIndex})/12`); // Nb jours moyen à l'année travaillés
 
         return newRow;
     }
