@@ -76,22 +76,25 @@ class WorkedTime {
             let employee = '';
             let month = null;
             let salary = 0;
+            let time = 0;
 
             if (mode === 'CNA') {
                 // CNA
                 employee = getValue(row, importSalariesHeaders, 'Nom du salarié');
                 month = getDateValue(row, importSalariesHeaders, 'Période');
                 salary = getValue(row, importSalariesHeaders, 'Coût global CNA');
+                time = getValue(row, importSalariesHeaders, 'Temps de travail');
             } else {
                 // Ver de terre
                 employee = getValue(row, importSalariesHeaders, 'Code CEGID Salarié');
                 month = getDateValue(row, importSalariesHeaders, 'Date');
                 salary = getValue(row, importSalariesHeaders, 'Cout global (attention comprends des frais déplacements)');
+                time = getValue(row, importSalariesHeaders, '%Temps travaillé');
             }
 
             if (salary > 0 && month) {
                 let key = `${employee}-${getDateKey(month)}`;
-                salaryMap.set(key, salary);
+                salaryMap.set(key, [salary, time]);
             }
         });
 
@@ -131,19 +134,19 @@ class WorkedTime {
             let key = `${employee}-${getDateKey(month)}`;
 
             if (salaryMap.has(key)) {
-                updatedSalaries.push([salaryMap.get(key)]);
+                updatedSalaries.push(salaryMap.get(key));
 
                 // Remove the key from the map to avoid duplicates
                 salaryMap.delete(key);
             } else {
                 // No update, keep the existing salary
-                updatedSalaries.push([getValue(row, salariesHeaders, 'Salaire chargé réel mensuel')]);
+                updatedSalaries.push([getValue(row, salariesHeaders, 'Salaire chargé réel mensuel'), getValue(row, salariesHeaders, 'Temps de travail dans le mois')]);
             }
         });
 
-        // Update the salaries in the sheet
+        // Update the salaries and time worked in the sheet
         let salaryColumnIndex = salariesHeaders.findIndex(item => 'salaire chargé réel mensuel' === item.toLowerCase()) + 1; // +1 because getRange is 1-based
-        salariesSheet.getRange(2, salaryColumnIndex, updatedSalaries.length, 1).setValues(updatedSalaries);
+        salariesSheet.getRange(2, salaryColumnIndex, updatedSalaries.length, 2).setValues(updatedSalaries);
 
         // Now add the rows that were in "Import Salaires" but not in "Salaires collaborateurs"
         const lastRow = salariesSheet.getLastRow();
@@ -331,11 +334,13 @@ class WorkedTime {
                 let key = getDateKey(d);
 
                 if (employee.salaries.has(key)) {
-                    console.log("Found a custom raise for employee " + employee.name + " on date " + key);
 
                     let salary = employee.salaries.get(key);
                     lastSalary = salary.salary;
                     lastAverageTime = salary.time;
+
+                    console.log("Found a custom raise for employee " + employee.name + " on date " + key + " - " + salary.salary + " with time " + salary.time);
+
                     continue; // Don't generate an anniversary salary if we already have a salary change for this month
                 }
 
@@ -363,13 +368,19 @@ class WorkedTime {
             }
 
             console.log(employee);
+            console.log([...employee.salaries]);
 
+            // Now generate the rows in the destination sheet
             let newValues = [];
 
             // Find the last row in the sheet
             const lastRow = destSheet.getLastRow();
 
-            let currentSalary = employee.salaries.values().next().value;
+            // Get the last row in the past:
+            let currentSalary = employee.salaries.values().toArray().filter(item => item.startDate <= startDate).sort((a, b) => b.startDate - a.startDate).at(0);
+
+            console.log("Starting salary for employee " + employee.name + " on date " + currentSalary.startDate + ": ");
+            console.log(currentSalary);
 
             // Now generate rows for each month of the employee
             for (let d = new Date(startDate.getTime()); d <= endDate; d.setMonth(d.getMonth() + 1)) {
