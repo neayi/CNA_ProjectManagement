@@ -264,7 +264,13 @@ class WorkedTime {
 
         // Start by getting the list of employees
         values.forEach((row, rowIndex) => {
-            let employeeName = getValue(row, headers, "Nom");
+            let employeeName = '';
+
+            if (mode == 'VER DE TERRE')
+                employeeName = getValue(row, headers, "Nom CEGID");
+            else
+                employeeName = getValue(row, headers, "Nom");
+
             let employeeData = employees.get(employeeName) || {
                 'name': employeeName,
                 'salaries': new Map()
@@ -445,34 +451,36 @@ class WorkedTime {
 
     static createSpreadsheetRowVDT(name, cegid, month, salary, time, status, rtt, rowIndex, isFuture = false) {
         let newRow = [];
-
-        newRow.push(titleCase(name));
-        newRow.push(cegid);
-        newRow.push(name);
-        newRow.push(getMonthStringForDate(month));
-        newRow.push(salary);
-        newRow.push(time);
-        newRow.push(`=IF(F${rowIndex} = 0; 0; E${rowIndex}/F${rowIndex})`);
+      
+        newRow.push(titleCase(name));        // Collaborateur nom projets
+        newRow.push(cegid);   // N° CEGID
+        newRow.push(name);   // Collaborateur
+        newRow.push(getMonthStringForDate(month));       // Mois
+        newRow.push(salary);    // Salaire chargé réel mensuel
+        newRow.push(time);        // Temps de travail dans le mois
+        newRow.push(`=IF(F${rowIndex} = 0; 0; E${rowIndex}/F${rowIndex})`);        // Salaire chargé 1 PM (ETP)
 
         if (isFuture) {
-            newRow.push('');
-            newRow.push(`=IF(D${rowIndex}<=DATE(2023;8;31); YEAR(D${rowIndex}); IF(MONTH(D${rowIndex}) <= 8; RIGHT(YEAR(D${rowIndex})-1; 2) & RIGHT(YEAR(D${rowIndex}); 2); RIGHT(YEAR(D${rowIndex}); 2) & RIGHT(YEAR(D${rowIndex})+1; 2)))`);
-            newRow.push('');
-            newRow.push(status);
-            newRow.push('');
+            newRow.push(`=IF(D${rowIndex}<=DATE(2023;8;31); YEAR(D${rowIndex}); IF(MONTH(D${rowIndex}) <= 8; RIGHT(YEAR(D${rowIndex})-1; 2) & RIGHT(YEAR(D${rowIndex}); 2); RIGHT(YEAR(D${rowIndex}); 2) & RIGHT(YEAR(D${rowIndex})+1; 2)))`); // Année
+            newRow.push(status);    // Statut
+            newRow.push('');        // Nb jours travaillés
             newRow.push(`=F${rowIndex}`); //  PM Effectif
-            
         } else {
-            newRow.push(`=FILTER('Import salaires'!S:S;'Import salaires'!A:A=D${rowIndex}*1;'Import salaires'!B:B=B${rowIndex})`);
-            newRow.push(`=IF(D${rowIndex}<=DATE(2023;8;31); YEAR(D${rowIndex}); IF(MONTH(D${rowIndex}) <= 8; RIGHT(YEAR(D${rowIndex})-1; 2) & RIGHT(YEAR(D${rowIndex}); 2); RIGHT(YEAR(D${rowIndex}); 2) & RIGHT(YEAR(D${rowIndex})+1; 2)))`);
-            newRow.push(`=FILTER('Import salaires'!T:T;'Import salaires'!A:A=D${rowIndex}*1;'Import salaires'!B:B=B${rowIndex})`);
-            newRow.push(status);
-            newRow.push(`=FILTER('Import salaires'!Q:Q;'Import salaires'!A:A=D${rowIndex}*1;'Import salaires'!B:B=B${rowIndex})`);
-            newRow.push(`=H${rowIndex}/R${rowIndex}`); //  PM Effectif
+            newRow.push(`=IF(D${rowIndex}<=DATE(2023;8;31); YEAR(D${rowIndex}); IF(MONTH(D${rowIndex}) <= 8; RIGHT(YEAR(D${rowIndex})-1; 2) & RIGHT(YEAR(D${rowIndex}); 2); RIGHT(YEAR(D${rowIndex}); 2) & RIGHT(YEAR(D${rowIndex})+1; 2)))`); // Année
+            newRow.push(status);        // Statut
+            newRow.push(`=FILTER('Import salaires'!S:S;'Import salaires'!A:A=D${rowIndex}*1;'Import salaires'!B:B=B${rowIndex})`);  // Nb jours travaillés
+            newRow.push(`=FILTER('Import salaires'!P:P;'Import salaires'!A:A=D${rowIndex}*1;'Import salaires'!B:B=B${rowIndex})`);  // PM Effectif
         }
 
         newRow.push(rtt); // RTT
-        newRow.push(`=(filter('Import Salaires'!$T$2:$T;'Import Salaires'!$R$2:$R=F${rowIndex})-25-L${rowIndex})/12`); // Nb jours moyen à l'année travaillés
+        newRow.push(`=(filter('Jours ouvrés par mois'!K:K;'Jours ouvrés par mois'!G:G=H${rowIndex}*1)-25-L${rowIndex})/12`); // Nb jours moyen à l'année travaillés
+
+        // Heures travaillées dans le mois réel qui sert à remplir les temps
+        // Heures travaillées officiels CEGID qui sert à calculer les coûts FEADER
+        // Vérif salaire brut : ok !
+        // Vérifs
+        // Données venant de suivi salaires
+        // Nb jours moyen à l'année travaillés
 
         return newRow;
     }
