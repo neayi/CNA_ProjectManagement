@@ -385,8 +385,11 @@ class WorkedTime {
             // Get the last row in the past:
             let currentSalary = employee.salaries.values().toArray().filter(item => item.startDate <= startDate).sort((a, b) => b.startDate - a.startDate).at(0);
 
-            console.log("Starting salary for employee " + employee.name + " on date " + currentSalary.startDate + ": ");
+            console.log("Starting salary for employee " + employee.name);
             console.log(currentSalary);
+
+            if (currentSalary == undefined)
+                currentSalary = employee.salaries.values().toArray().sort((a, b) => a.startDate - b.startDate).at(0);
 
             // Now generate rows for each month of the employee
             for (let d = new Date(startDate.getTime()); d <= endDate; d.setMonth(d.getMonth() + 1)) {
@@ -437,8 +440,9 @@ class WorkedTime {
             newRow.push('');
         } else {
             newRow.push(`=sumifs('Import Salaires'!K:K; 'Import Salaires'!C:C; A${rowIndex}; 'Import Salaires'!A:A; B${rowIndex})`); // Jours d'absence (RTT, Vacances, Maladies)
-            newRow.push(`=(vlookup(B${rowIndex}; 'Import Salaires'!M:N; 2; false) - H${rowIndex}) * D${rowIndex}`); // Nb de jours de présence
-            newRow.push(`=I${rowIndex}/N${rowIndex}`); // PM Effectif
+            newRow.push(`=(VLOOKUP(B${rowIndex}; 'Import Salaires'!O:P; 2; false) - H${rowIndex}) * D${rowIndex}`); // Nb de jours de présence
+
+            newRow.push(`=I${rowIndex}/M${rowIndex}`); // PM Effectif
             
             newRow.push(`=sumifs('Import Salaires'!F:F; 'Import Salaires'!C:C; A${rowIndex}; 'Import Salaires'!A:A; B${rowIndex})`); // Salaire effectif
         }
