@@ -88,7 +88,7 @@ class WorkedTime {
                 // Ver de terre
                 employee = getValue(row, importSalariesHeaders, 'Code CEGID Salarié');
                 month = getDateValue(row, importSalariesHeaders, 'Date');
-                salary = getValue(row, importSalariesHeaders, 'Cout global (attention comprends des frais déplacements)');
+                salary = getValue(row, importSalariesHeaders, 'Cout total avec frais déplacement');
                 time = getValue(row, importSalariesHeaders, '%Temps travaillé');
             }
 
@@ -266,6 +266,12 @@ class WorkedTime {
         values.forEach((row, rowIndex) => {
             let employeeName = '';
 
+            const salaireReel = getValue(row, headers, "Salaire réel");
+            if (salaireReel <= 0) {
+                // Skipping row because salaire réel is not set.
+                return;
+            }
+            
             if (mode == 'VER DE TERRE')
                 employeeName = getValue(row, headers, "Nom CEGID");
             else
@@ -279,7 +285,7 @@ class WorkedTime {
             let salaryRow = {};
             salaryRow.startDate = getDateValue(row, headers, "Date début");
             salaryRow.endDate = getDateValue(row, headers, "Date fin");
-            salaryRow.salary = getValue(row, headers, "Salaire réel");
+            salaryRow.salary = salaireReel;
             salaryRow.time = getValue(row, headers, "Temps de travail");
             salaryRow.rtt = getValue(row, headers, "RTT");
             salaryRow.status = getValue(row, headers, "Statut");
@@ -390,7 +396,7 @@ class WorkedTime {
 
             if (currentSalary == undefined)
                 currentSalary = employee.salaries.values().toArray().sort((a, b) => a.startDate - b.startDate).at(0);
-
+            
             // Now generate rows for each month of the employee
             for (let d = new Date(startDate.getTime()); d <= endDate; d.setMonth(d.getMonth() + 1)) {
                 let key = getDateKey(d);
@@ -440,8 +446,7 @@ class WorkedTime {
             newRow.push('');
         } else {
             newRow.push(`=sumifs('Import Salaires'!K:K; 'Import Salaires'!C:C; A${rowIndex}; 'Import Salaires'!A:A; B${rowIndex})`); // Jours d'absence (RTT, Vacances, Maladies)
-            newRow.push(`=(VLOOKUP(B${rowIndex}; 'Import Salaires'!O:P; 2; false) - H${rowIndex}) * D${rowIndex}`); // Nb de jours de présence
-
+            newRow.push(`=(vlookup(B${rowIndex}; 'Import Salaires'!M:N; 2; false) - H${rowIndex}) * D${rowIndex}`); // Nb de jours de présence
             newRow.push(`=I${rowIndex}/M${rowIndex}`); // PM Effectif
             
             newRow.push(`=sumifs('Import Salaires'!F:F; 'Import Salaires'!C:C; A${rowIndex}; 'Import Salaires'!A:A; B${rowIndex})`); // Salaire effectif
