@@ -88,7 +88,7 @@ class WorkedTime {
                 // Ver de terre
                 employee = getValue(row, importSalariesHeaders, 'Code CEGID Salarié');
                 month = getDateValue(row, importSalariesHeaders, 'Date');
-                salary = getValue(row, importSalariesHeaders, 'Cout total avec frais déplacement');
+                salary = getValue(row, importSalariesHeaders, 'Cout total sans frais déplacement');
                 time = getValue(row, importSalariesHeaders, '%Temps travaillé');
             }
 
@@ -272,10 +272,7 @@ class WorkedTime {
                 return;
             }
             
-            if (mode == 'VER DE TERRE')
-                employeeName = getValue(row, headers, "Nom CEGID");
-            else
-                employeeName = getValue(row, headers, "Nom");
+            employeeName = getValue(row, headers, "Nom");
 
             let employeeData = employees.get(employeeName) || {
                 'name': employeeName,
