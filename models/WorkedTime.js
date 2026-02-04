@@ -440,7 +440,7 @@ class WorkedTime {
             newRow.push('');
             newRow.push(`=D${rowIndex}`); // PM Effectif
             
-            newRow.push('');
+            newRow.push(`=M${rowIndex}`); // Nb de jours de présence == Nb jours moyen à l'année travaillés
         } else {
             newRow.push(`=sumifs('Import Salaires'!K:K; 'Import Salaires'!C:C; A${rowIndex}; 'Import Salaires'!A:A; B${rowIndex})`); // Jours d'absence (RTT, Vacances, Maladies)
             newRow.push(`=(vlookup(B${rowIndex}; 'Import Salaires'!M:N; 2; false) - H${rowIndex}) * D${rowIndex}`); // Nb de jours de présence
