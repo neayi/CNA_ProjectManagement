@@ -186,8 +186,10 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
                 const key = DeclaredTimePerPerson.makeKey(employee.name, workPackage.name, projectName, yearString);
                 let wpPerson = wpPersons.get(key);
 
-                if (wpPerson == false || wpPerson.budgetedTime == 0)
+                if (wpPerson == false || wpPerson.budgetedTime == 0) {
+                    console.log("Skipping " + employee.name + " on " + workPackage.name + " for year " + yearString + " because no budgeted time.");
                     return;
+                }
 
                 console.log("Adding declared time for " + employee.name + " on " + workPackage.name + " for year " + yearString + ": " + debugRound(wpPerson.budgetedTime));
 
@@ -300,6 +302,8 @@ function generateTimesForDates(startDate, endDate, deleteExistingTimes, projectN
         });
     });    // For each year
 
+    Logger.log("Finished generating declared times for project " + projectName + " between " + startDate + " and " + endDate);
+    
     SpreadsheetApp.getUi().alert("Les temps ont été générés.");
 }
 
