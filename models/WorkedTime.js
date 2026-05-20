@@ -157,14 +157,15 @@ class WorkedTime {
             let month = null;
             let salary = 0;
             let time = null;
+            let employeekey = '';
 
             if (mode === 'CNA') {
-                employee = getValue(row, importSalariesHeaders, 'Nom du salarié');
+                employeekey = employee = getValue(row, importSalariesHeaders, 'Nom du salarié');
                 month = getDateValue(row, importSalariesHeaders, 'Période');
                 salary = getValue(row, importSalariesHeaders, 'Coût global CNA');
                 time = getValue(row, importSalariesHeaders, 'Temps de travail');
             } else {
-                cegid = getValue(row, importSalariesHeaders, 'Code CEGID Salarié');
+                employeekey = cegid = getValue(row, importSalariesHeaders, 'Code CEGID Salarié');
                 let nom = getValue(row, importSalariesHeaders, 'Nom');
                 let prenom = getValue(row, importSalariesHeaders, 'Prénom');
 
@@ -176,7 +177,7 @@ class WorkedTime {
             }
         
             if (salary > 0 && month) {
-                let key = `${employee}-${getDateKey(month)}`;
+                let key = `${employeekey}-${getDateKey(month)}`;
 
                 // Check if this key is still in the salaryMap, meaning it was not found in the existing salaries
                 // and should be added as a new row
@@ -192,6 +193,16 @@ class WorkedTime {
                     newRows.push(newRow);
                 }
             }
+
+            if (employee.length == 0)
+            {
+                console.log(importSalariesHeaders);
+                console.log(row);
+                throw new Error("Employee is empty ?");
+            }
+
+            if (newRows.length > 0)
+                console.log("New rows to add: " + newRows.length + " for collaborator " + employee);
         });
 
         // If there are new rows, add them to the sheet
@@ -288,8 +299,6 @@ class WorkedTime {
             salaryRow.status = getValue(row, headers, "Statut");
 
             employeeData.salaries.set(getDateKey(salaryRow.startDate), salaryRow);
-            console.log("Adding a salary row for employee " + employeeName + " (initial): ");
-            console.log(salaryRow);
 
             // Now add a salaries item if change date is not empty:
             let changedSalaryRow = {};
