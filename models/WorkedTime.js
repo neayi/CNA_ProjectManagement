@@ -193,16 +193,6 @@ class WorkedTime {
                     newRows.push(newRow);
                 }
             }
-
-            if (employee.length == 0)
-            {
-                console.log(importSalariesHeaders);
-                console.log(row);
-                throw new Error("Employee is empty ?");
-            }
-
-            if (newRows.length > 0)
-                console.log("New rows to add: " + newRows.length + " for collaborator " + employee);
         });
 
         // If there are new rows, add them to the sheet
