@@ -13,7 +13,17 @@
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jquery-ui@1.14.1/dist/jquery-ui.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/jquery-ui@1.14.1/dist/jquery-ui.min.css" rel="stylesheet" />
-    
+    <style>
+        .ui-datepicker {
+            background-color: #fff;
+            border: 1px solid #ccc;
+            z-index: 9999 !important;
+        }
+        .ui-datepicker .ui-widget-header {
+            background-color: #e9ecef;
+        }
+    </style>
+
 </head>
 
 <body>
@@ -23,12 +33,12 @@
             <div class="row">
                 <div class="col mb-3">
                     <label for="startDate" class="form-label">Date de début :</label>
-                    <input type="text" id="datepickerStart" name="dateStart" 
+                    <input type="text" id="datepickerStart" name="dateStart"
                         autocomplete="off" readonly="readonly" style="width: 128px; text-align: right;">
                 </div>
                 <div class="col mb-3">
                     <label for="endDate" class="form-label">Date de fin :</label>
-                    <input type="text" id="datepickerEnd" name="dateEnd" 
+                    <input type="text" id="datepickerEnd" name="dateEnd"
                         autocomplete="off" readonly="readonly" style="width: 128px; text-align: right;">
                 </div>
             </div>
@@ -39,7 +49,7 @@
                     <select id="projectPicker" name="projectId" class="form-select" disabled>
                         <option value="">Chargement des projets...</option>
                     </select>
-                    
+
                 </div>
             </div>
             <div class="row">
@@ -48,7 +58,19 @@
                         aria-hidden="true"></span></label>
                     <select id="reportingPeriodPicker" name="reportingPeriodId" class="form-select" disabled>
                         <option value="">Sélectionner une période de reporting...</option>
-                    </select>                    
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="limitDateCheck" checked>
+                        <label class="form-check-label" for="limitDateCheck">
+                            Ne pas générer de temps avant le
+                            <input type="text" id="datepickerLimit" name="dateLimit"
+                                autocomplete="off" readonly="readonly" style="width: 100px; text-align: right; cursor: pointer;">
+                        </label>
+                    </div>
                 </div>
             </div>
             <div class="row">
@@ -69,7 +91,7 @@
         <div class="mt-5 text-center d-none" id="loading-div">
             <div class="spinner-border text-primary" role="status" id="loading-spinner">
                 <span class="visually-hidden">Loading...</span>
-            </div> 
+            </div>
             <span id="loading-text" style="top: -7px; position: relative; left: 20px;">Génération des temps en cours... veuillez patienter !</span>
         </div>
 
@@ -96,6 +118,17 @@
             startDate = new Date(Number(startYear), Number(startMonth) - 1, 1);
             endDate = new Date(Number(endYear), Number(endMonth) - 1, 1);
 
+            if ($("#limitDateCheck").is(":checked")) {
+                var limitDateStr = $("#datepickerLimit").val();
+                if (limitDateStr) {
+                    var limitParts = limitDateStr.split('/');
+                    var limitDate = new Date(Number(limitParts[2]), Number(limitParts[1]) - 1, Number(limitParts[0]));
+                    if (limitDate > startDate) {
+                        startDate = limitDate;
+                    }
+                }
+            }
+
             if (startDate > endDate) {
                 $("#error-text").text("La date de début ne peut pas être postérieure à la date de fin.");
                 return;
@@ -103,17 +136,17 @@
 
             console.log("Generating times for project ID:", projectId, "from", startDate, "to", endDate);
 
-            google.script.run.withSuccessHandler(function () {                
-                google.script.host.close();    
+            (typeof google !== 'undefined') && google.script.run.withSuccessHandler(function () {
+                google.script.host.close();
             }).generateTimesForDates(startDate.valueOf(), endDate.valueOf(), false, projectId);
-            
+
             // Show a loading message
             $("#submitButton").parent().hide();
             $("#loading-div").removeClass("d-none");
         }
 
         function cancel() {
-            google.script.host.close();
+            (typeof google !== 'undefined') && google.script.host.close();
         }
 
         // When the page is ready, initialize the datepicker
@@ -121,12 +154,29 @@
 
             let reportingPeriods = [];
 
+            // Initialize limit date picker with 01/01 of current year
+            var currentYear = new Date().getFullYear();
+            $("#datepickerLimit").datepicker({
+                dateFormat: "dd/mm/yy",
+                changeMonth: true,
+                changeYear: true
+            });
+            var initDate = new Date(currentYear, 0, 1);
+            var dd = String(initDate.getDate()).padStart(2, '0');
+            var mm = String(initDate.getMonth() + 1).padStart(2, '0');
+            $("#datepickerLimit").val(dd + '/' + mm + '/' + currentYear);
+
+            // Toggle limit date input enabled state based on checkbox
+            $("#limitDateCheck").on("change", function () {
+                $("#datepickerLimit").prop("disabled", !this.checked);
+            });
+
             // Show spinner and disable dropdown before loading
             $("#projectPicker").prop("disabled", true);
             $("#project-spinner").show();
 
             // Load projects from server
-            google.script.run.withSuccessHandler(function (projects) {
+            (typeof google !== 'undefined') && google.script.run.withSuccessHandler(function (projects) {
                 var $picker = $("#projectPicker");
                 $picker.empty();
                 if (projects && projects.length) {
@@ -142,7 +192,7 @@
             }).getProjects();
 
             // Load projects from server
-            google.script.run.withSuccessHandler(function (rp) {
+            (typeof google !== 'undefined') && google.script.run.withSuccessHandler(function (rp) {
                 reportingPeriods = rp;
                 $("#reporting-period-spinner").hide();
                 $("#reportingPeriodPicker").prop("disabled", false);
